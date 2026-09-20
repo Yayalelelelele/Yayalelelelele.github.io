@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Manus 技术架构分析：上下文、记忆、工具、执行环境、多 Agent 与长程任务机制。">
+  <title>Manus 技术架构分析</title>
+  <style>
+    :root{--bg:#fff;--sidebar:#f7f8fa;--ink:#20242a;--muted:#6b7280;--line:#e5e7eb;--accent:#2563eb;--soft:#f4f7fb;--code:#f3f4f6;--sans:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif}
+    *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.78}
+    .progress{position:fixed;inset:0 auto auto 0;height:2px;width:0;background:var(--accent);z-index:50}
+    .layout{display:grid;grid-template-columns:340px minmax(0,1fr);min-height:100vh}
+    aside{position:sticky;top:0;height:100vh;padding:28px 22px;background:var(--sidebar);border-right:1px solid var(--line);overflow:auto}
+    .brand{margin-bottom:24px}.mark{display:none}.brand strong{font-size:15px;font-weight:650}.brand small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+    .side-label{margin:20px 0 8px;color:#9ca3af;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}.toc{display:flex;flex-direction:column}.toc a{display:block;color:#667085;text-decoration:none;border-left:2px solid transparent;padding:6px 8px 6px 11px;font-size:13px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.toc a.sub{padding-left:22px;font-size:12px}.toc a:hover,.toc a.active{color:var(--accent);border-color:var(--accent);background:#edf3ff}
+    .side-actions{margin-top:22px}.side-actions button{width:100%;background:#fff;border:1px solid var(--line);color:#4b5563;border-radius:5px;padding:8px;font:inherit;font-size:12px;cursor:pointer}.side-actions button:hover{border-color:#b7c2d0;color:var(--ink)}
+    main{min-width:0;padding:64px 6vw 100px}.article{max-width:800px;margin:0 auto}
+    .document-header{padding-bottom:34px;border-bottom:1px solid var(--line);margin-bottom:42px}.eyebrow{margin:0 0 12px;color:var(--accent);font-size:13px;font-weight:600}.scope{margin:18px 0 0;max-width:740px;color:var(--muted);font-size:14px;line-height:1.7}.scope strong{color:#4b5563}
+    h1{font-size:clamp(2rem,4vw,2.8rem);font-weight:700;letter-spacing:-.035em;line-height:1.22;margin:0}
+    h2{font-size:1.65rem;line-height:1.35;margin:72px 0 24px;padding-top:16px;border-top:1px solid var(--line)}h2::before{content:attr(data-index);display:inline-block;color:#9ca3af;font:600 12px/1 var(--sans);letter-spacing:.06em;margin-right:10px;vertical-align:middle}
+    h3{font-size:1.18rem;line-height:1.45;margin:48px 0 16px}p{margin:0 0 1.2em}strong{font-weight:650}
+    a{color:#1d4ed8;text-decoration-color:#bfdbfe;text-underline-offset:3px}a:hover{text-decoration-color:currentColor}
+    blockquote{margin:24px 0;padding:14px 18px;border-left:3px solid #9ca3af;background:var(--soft);color:#4b5563}blockquote p:last-child{margin-bottom:0}
+    ul,ol{padding-left:1.45rem;margin:0 0 1.4rem}li{padding-left:.22rem;margin:.4rem 0}li::marker{color:#9ca3af}
+    code{font-family:"SFMono-Regular",Consolas,monospace;font-size:.88em;background:var(--code);border-radius:4px;padding:.15em .36em}pre{background:#f6f7f9;color:#303641;padding:20px;border:1px solid var(--line);border-radius:6px;overflow:auto;line-height:1.65;margin:24px 0}pre code{background:transparent;padding:0;font-size:13px}
+    .table-wrap{overflow:auto;margin:24px 0 32px;border:1px solid var(--line);border-radius:6px}table{width:100%;border-collapse:collapse;min-width:620px;font-size:.91rem;line-height:1.6}th{background:#f6f7f9;text-align:left;font-weight:650}th,td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}tbody tr:last-child td{border-bottom:0}
+    #架构特点{margin-top:0;border-top:0;padding-top:0;font-size:1.4rem}.insight-list{list-style:none;padding:0;margin:30px 0 10px}.insight-list>li{padding:0;color:var(--ink);font-size:1.05rem}.insight-list>li::before{content:attr(data-index);display:inline-block;margin-right:10px;color:var(--accent);font-size:12px;font-weight:700}.insight-list+ p{margin-top:0}#目录{font-size:1.1rem;margin-top:54px}#目录+ul{columns:2;column-gap:30px;padding-left:1.2rem;font-size:14px}
+    .backtop{position:fixed;right:22px;bottom:22px;width:38px;height:38px;border:1px solid var(--line);border-radius:50%;background:#fff;color:#4b5563;cursor:pointer;opacity:0;transform:translateY(8px);transition:.2s}.backtop.show{opacity:1;transform:none}
+    @media(max-width:900px){.layout{display:block}aside{position:relative;height:auto;padding:15px 20px;border-right:0;border-bottom:1px solid var(--line)}.brand{margin:0}.side-label,.toc{display:none}.side-actions{position:absolute;right:16px;top:8px;margin:0;width:105px}main{padding:42px 22px 70px}}
+    @media(max-width:560px){body{font-size:16px}.brand small{display:none}main{padding:34px 18px 60px}.document-header{padding-bottom:28px;margin-bottom:34px}h1{font-size:2rem}h2{font-size:1.45rem;margin-top:58px}h3{margin-top:40px}.table-wrap{margin-left:-8px;margin-right:-8px}#目录+ul{columns:1}.backtop{right:12px;bottom:12px}}
+    @media print{.progress,aside,.backtop{display:none}.layout{display:block}main{padding:0}.article{max-width:none;padding:18mm}a{color:inherit;text-decoration:none}h2,h3{break-after:avoid}.table-wrap,pre,blockquote{break-inside:avoid}}
+  
+h2+h3{margin-top:28px}h2::before{display:none}.insight-list>li{display:flex;align-items:baseline;gap:.5em}.insight-list>li::before{display:block;flex:none;content:attr(data-index);font:inherit;font-weight:650;color:inherit;margin:0}#目录+ul{columns:1}.home-link{display:block;margin-bottom:22px;color:var(--muted);font-size:14px;text-decoration:none}.contents>summary{display:none}.toc a{white-space:normal;font-size:14px;line-height:1.5}.toc a.sub{font-size:13px}.side-label{font-size:12px}.skip-link{position:fixed;top:-80px;left:12px;z-index:100;background:white;padding:12px}.skip-link:focus{top:8px}a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.backtop:not(.show){visibility:hidden}.article a{overflow-wrap:anywhere}
+@media(max-width:900px){.home-link{margin-bottom:10px}.side-actions{top:22px}.contents>summary{display:block;cursor:pointer;font-size:14px;padding-top:12px}.contents .toc{display:flex;margin-top:12px;max-height:45vh;overflow:auto}.contents:not([open]) .toc{display:none}}
+/* Reading rhythm: distinguish chapters, subsections, and in-paragraph signposts. */
+.article{max-width:740px;line-height:1.85}.article>p{margin-bottom:1.25em}.article h2{font-size:26px;line-height:1.45;margin-top:64px;margin-bottom:24px;padding-top:24px}.article h3{font-size:20px;line-height:1.55;margin-top:44px;margin-bottom:18px;font-weight:650}.article h2+h3{margin-top:24px}.article>.lead-statement{margin-top:28px;margin-bottom:10px;line-height:1.7}.article h3+.lead-statement{margin-top:0}.article a{color:#3e638a;text-decoration-color:#cbd6e0;text-decoration-thickness:1px;text-underline-offset:3px}.article a:hover{color:#174f88;text-decoration-color:currentColor}.article li{margin:.65em 0}.article .insight-list>li{margin:0}.table-wrap{border-radius:3px;border-left:0;border-right:0}.article th,.article td{padding:14px 16px}.article th{background:#f5f6f8}.side-actions button{font-size:13px;white-space:nowrap}.contents>summary{list-style:revert}.toc a:not(.sub){font-weight:600}.toc a.sub{color:#667085}.toc a.active{color:var(--accent)}
+@media(max-width:900px){.side-actions{width:auto;right:20px}.side-actions button{padding:8px 12px}.article{max-width:700px}}
+@media(max-width:560px){.article h2{font-size:23px;margin-top:52px}.article h3{font-size:19px;margin-top:36px}.article h2+h3{margin-top:22px}.article{line-height:1.85}.table-wrap{margin-left:0;margin-right:0}.article pre{font-size:14px;padding:16px}}
+@media print{.article{max-width:none}.article a{color:inherit}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.backtop{transition:none}}
+</style>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../editorial.css"></head>
+<body><a class="skip-link" href="#main">跳到正文</a>
+  <div class="progress" aria-hidden="true"></div>
+  <div class="layout">
+    <aside>
+      <a class="home-link" href="../index.html">← 目录</a>
+      <div class="side-label">文章目录</div>
+      <details class="contents" open><summary>文章目录</summary><nav class="toc" aria-label="文章目录"><a href="#架构特点" class="">架构特点</a><a href="#目录" class="">目录</a><a href="#1-上下文管理" class="">1. 上下文管理</a><a href="#11-稳定前缀与-kv-cache-复用" class="sub">1.1 稳定前缀与 KV-cache 复用</a><a href="#12-上下文外置与分阶段压缩" class="sub">1.2 上下文外置与分阶段压缩</a><a href="#13-目标重述与失败轨迹保留" class="sub">1.3 目标重述与失败轨迹保留</a><a href="#14-引入结构化变化避免机械重复" class="sub">1.4 引入结构化变化，避免机械重复</a><a href="#2-记忆与状态管理" class="">2. 记忆与状态管理</a><a href="#21-持久对话项目继承与会话分支" class="sub">2.1 持久对话、项目继承与会话分支</a><a href="#22-项目指令与知识库的更新机制" class="sub">2.2 项目指令与知识库的更新机制</a><a href="#23-项目记忆写回" class="sub">2.3 项目记忆写回</a><a href="#3-工具使用与执行环境" class="">3. 工具使用与执行环境</a><a href="#31-分层动作空间通过基础工具调用沙箱程序" class="sub">3.1 分层动作空间：通过基础工具调用沙箱程序</a><a href="#32-保留工具定义约束当前可选动作" class="sub">3.2 保留工具定义，约束当前可选动作</a><a href="#33-用-skills-组织可复用方法按需加载详细说明" class="sub">3.3 用 Skills 组织可复用方法，按需加载详细说明</a><a href="#34-云端与本地执行环境" class="sub">3.4 云端与本地执行环境</a><a href="#4-多-agent-架构与协作机制" class="">4. 多 Agent 架构与协作机制</a><a href="#41-规划执行与知识管理的职责分工" class="sub">4.1 规划、执行与知识管理的职责分工</a><a href="#42-wide-research通用实例的并行执行与集中汇总" class="sub">4.2 Wide Research：通用实例的并行执行与集中汇总</a><a href="#43-子任务的上下文传递与结构化结果返回" class="sub">4.3 子任务的上下文传递与结构化结果返回</a><a href="#5-长程任务的关键机制" class="">5. 长程任务的关键机制</a><a href="#51-任务规划上下文管理与执行反馈" class="sub">5.1 任务规划、上下文管理与执行反馈</a><a href="#52-用户交互信息补充与操作确认" class="sub">5.2 用户交互：信息补充与操作确认</a><a href="#53-进度保留与任务恢复" class="sub">5.3 进度保留与任务恢复</a><a href="#54-周期执行与上下文复用" class="sub">5.4 周期执行与上下文复用</a><a href="#6-总结与思考" class="">6. 总结与思考</a><a href="#参考资料" class="">参考资料</a><a href="#manus-官方技术与产品资料" class="sub">Manus 官方技术与产品资料</a><a href="#manus-api-文档" class="sub">Manus API 文档</a><a href="#创始人访谈笔记与补充参考" class="sub">创始人访谈笔记与补充参考</a></nav></details>
+      
+    </aside>
+    <main id="main"><article class="article"><header class="document-header"><p class="eyebrow">技术调研 · 2026-09-17</p><h1 id="manus-技术架构分析">Manus 技术架构分析</h1><details class="research-scope"><summary>资料与研究范围</summary><p class="scope">使用 Manus 官方技术博客、产品文档和开放 API 文档，并参考 Lance Martin 整理的创始人访谈笔记；访谈笔记按其发表时间引用，不视为当前完整架构的确认。未登录产品、未读取浏览器 Cookie、未进行付费黑盒测试。</p></details></header><h2 id="架构特点">架构特点</h2>
+<ol>
+<li><strong>以通用 Agent Loop 为基础，通过上下文管理与执行控制支撑复杂长程任务。</strong></li>
+</ol>
+<p>Manus 的基本运行方式仍是通用的 Agent Loop：模型根据当前信息选择动作，工具或执行环境返回结果，再进入下一轮决策。<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章</a> 它公开的技术重点，是如何让这个循环在任务变长、信息增多之后，仍能持续有效地运行。</p>
+<p>围绕这一目标，上下文管理负责组织每一步需要的信息，规划维持任务方向，工具约束控制当前可选的操作。缓存复用、历史压缩、目标重述和失败记录保留，分别处理重复计算、信息积累与后续决策的问题。<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章</a>、<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">创始人访谈笔记</a></p>
+<p>任务状态与执行环境则支撑具体操作，以及任务的等待与继续。<a href="https://open.manus.ai/docs/v2/task-lifecycle" target="_blank" rel="noopener">Task Lifecycle</a>、<a href="https://manus.im/blog/manus-sandbox" target="_blank" rel="noopener">Understanding Manus Sandbox</a></p>
+<p class="lead-statement"><strong>这些机制的关键，是在决策质量与运行成本之间取得平衡。</strong></p>
+<p>压缩可以减少输入，却可能丢失必要信息、影响缓存复用；保留更多历史有助于追溯，也会增加处理负担。最终仍要看这些选择能否改善完整任务的交付质量、耗时和成本，而不能仅凭采用了哪些机制判断效果。</p>
+<ol start="2">
+<li><strong>按工作职责组织 Agent 分工，通过通用实例并行处理独立任务。</strong></li>
+</ol>
+<p>Manus 的公开资料介绍了两类协作设计：创始人访谈描述了规划、执行与知识管理的职责分工；Wide Research 则由主控拆分任务，交给多个通用 Manus 实例，在各自的上下文与执行环境中并行处理，再集中汇总结果。<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">创始人访谈笔记</a>、<a href="https://manus.im/blog/manus-wide-research-solve-context-problem" target="_blank" rel="noopener">Wide Research</a></p>
+<p>这体现出一种围绕任务组织通用能力的取向：执行者可以根据需要搜索、编程和整理结果，不必仅因操作类型变化就切换专家。相比“Router + 预设专家”便于针对稳定场景做专门优化，通用执行者为开放任务保留了更多自主空间，也更依赖自身的任务理解、工具选择和错误处理能力。</p>
+<p class="lead-statement"><strong>分工与并行减少了单个 Agent 的信息负担，也增加了任务交接与结果整合的工作。</strong></p>
+<p>子任务是否能独立完成、背景是否交代充分、返回结果是否支持后续判断，都会影响整体收益。上述职责分工与 Wide Research 在当前系统中如何组合，引用材料尚未说明；这些设计也不足以证明 Manus 的所有场景都不存在专门化 Agent。</p>
+<h2 id="目录">目录</h2>
+<ul>
+<li><a href="#1-%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AE%A1%E7%90%86">1. 上下文管理</a></li>
+<li><a href="#2-%E8%AE%B0%E5%BF%86%E4%B8%8E%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86">2. 记忆与状态管理</a></li>
+<li><a href="#3-%E5%B7%A5%E5%85%B7%E4%BD%BF%E7%94%A8%E4%B8%8E%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83">3. 工具使用与执行环境</a></li>
+<li><a href="#4-%E5%A4%9A-agent-%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%8D%8F%E4%BD%9C%E6%9C%BA%E5%88%B6">4. 多 Agent 架构与协作机制</a></li>
+<li><a href="#5-%E9%95%BF%E7%A8%8B%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%85%B3%E9%94%AE%E6%9C%BA%E5%88%B6">5. 长程任务的关键机制</a></li>
+<li><a href="#6-%E6%80%BB%E7%BB%93%E4%B8%8E%E6%80%9D%E8%80%83">6. 总结与思考</a></li>
+<li><a href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99">参考资料</a></li>
+</ul>
+<h2 id="1-上下文管理">1. 上下文管理</h2>
+
+<h3 id="11-稳定前缀与-kv-cache-复用">1.1 稳定前缀与 KV-cache 复用</h3>
+<p>长程任务中，模型每轮输出可能很短，但需要处理的历史记录却在持续增长。相邻请求又往往共享大量相同内容，因此，减少重复计算是一个直接的优化方向。Manus 在 2025 年 7 月的技术文章中提到，当时平均输入与输出 Token 比约为 100:1，并强调 KV-cache 命中率对时延和成本的重要性。<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章：KV-cache</a></p>
+<p>不过，相邻请求包含相同内容，并不意味着这些内容就能命中缓存。这也让一些看似无关紧要的格式选择，变成了成本问题。官方文章以系统提示词开头的精确时间戳为例：前缀中即使只有一个 Token 发生变化，也可能使该位置之后的缓存失效。<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章：前缀稳定性</a> 据此可以理解，即使后面大段文字没有变化，也不能只凭语义相同来判断缓存能否复用。</p>
+<p class="lead-statement"><strong>稳住输入前缀，让缓存持续复用。</strong></p>
+<p>落实到上下文组织上，重点就是减少前缀中的不必要变化。官方文章中关于 KV-cache 和工具定义稳定性的做法，可以整理为以下几项：<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章：Design Around the KV-Cache / Mask, Don't Remove</a></p>
+<ul>
+<li><strong>保持稳定前缀</strong>（Stable Prefix）：让输入开头保持一致，避免把精确到秒的时间戳等频繁变化的信息放在开头。</li>
+<li><strong>保持工具定义稳定</strong>：工具名称、参数说明和排列顺序尽量不要在每轮请求中变化。工具定义通常位于上下文前部，修改它们可能导致后面大段历史内容无法复用缓存，增加重复计算成本。</li>
+<li><strong>历史尽量只追加</strong>（Append-only）：新动作和结果加到末尾，不随意改写已经记录的内容。</li>
+<li><strong>确定性序列化</strong>（Deterministic Serialization）：让相同的工具记录生成一致的文本表示，例如固定 JSON 字段顺序，避免仅因格式变化而破坏缓存。</li>
+<li><strong>标记需要缓存的内容</strong>：如果模型服务要求显式设置，就在稳定内容的末尾设置缓存断点（Cache Breakpoint），标明需要缓存到哪里，让后续请求可以复用这部分内容的计算结果。</li>
+</ul>
+<p>这些做法并不改变模型的推理能力，却会影响一次长任务需要付出多少重复计算。与此同时，缓存命中也不意味着历史内容都值得保留。上下文过长时，压缩可能损失一部分缓存，却换来更短、更聚焦的输入。这也是下一节文件外置与压缩要处理的问题。</p>
+<h3 id="12-上下文外置与分阶段压缩">1.2 上下文外置与分阶段压缩</h3>
+<p>即使命中缓存，长上下文的负担仍然存在。因此，还需要区分：哪些材料值得保存，哪些内容需要继续留在当前输入中。读取一份长报告时，Agent 可能暂时只需要几项指标，但后续核对结论时，又需要查看原文中的脚注。直接丢弃原文可能失去依据，始终把全文放在上下文中又会增加处理成本。</p>
+<p class="lead-statement"><strong>材料留在文件中，历史先保留引用，再做摘要。</strong></p>
+<p><strong>上下文外置</strong>（Context Offloading）提供了一种处理方式：将“保存材料”和“本轮读入材料”分开，完整内容保存在文件中，上下文只保留必要线索，需要时再读取。这也带来一个要求：移出内容之后，仍要留下找回它的入口。2025 年 7 月的 Manus 官方文章强调的正是<strong>可恢复压缩</strong>（Restorable Compression）：省略正文时保留文件路径或 URL，让 Agent 后续仍能找回原文。<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章：文件系统作为上下文</a></p>
+<p>围绕这套思路，2025 年 10 月 15 日的访谈笔记进一步描述了如何逐步缩短任务历史：先用引用替换全文，再在需要时转向轨迹摘要。<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">创始人访谈笔记：Context Reduction</a></p>
+<ul>
+<li><strong>先做上下文紧凑化</strong>（Compaction）：在这份材料中，指用文件引用替换较旧工具结果的全文。原始结果保存在沙箱文件中，近期结果则保持完整，以支持下一步决策。</li>
+<li><strong>再做轨迹摘要</strong>（Trajectory Summarization）：当紧凑化的压缩收益递减时，根据完整工具结果，按预先定义的摘要结构（Schema）生成摘要。</li>
+</ul>
+<p>这里的“轨迹”指任务执行过程中连续的动作与反馈记录，而不是单份文档。两步处理的区别也正在这里：前一步用引用替代全文，保留找回原文的入口；后一步则要筛选和重述执行过程，可能遗漏细节或产生误述。保留原始文件有助于核对，但能否找回所需信息，仍取决于模型是否主动读取，以及文件是否仍然可用。</p>
+<p class="lead-statement"><strong>压缩的价值，要看任务能否继续做好。</strong></p>
+<p>一旦压缩涉及信息筛选，就不能只看省下了多少 Token，还要看留下的信息能否支撑下一步决策。否则，节省的 Token 可能被重复检索、重复执行或错误恢复的成本抵消。从这个角度看，任务完成质量和整体成本，比单独的压缩比例更值得关注。</p>
+<p>访谈笔记提到，紧凑化收益递减后会转向摘要，但没有展开摘要字段、具体触发阈值，以及如何检查压缩后的信息是否够用。<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">创始人访谈笔记：Context Reduction</a></p>
+<p>除了信息保留，压缩还会牵涉上一节讨论的前缀稳定性。官方文章指出，前缀中即使只有一个 Token 发生变化，也可能使该位置之后的缓存失效。<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章：前缀变化与缓存失效</a></p>
+<p>据此可以推导，把历史中的全文替换为文件引用，也可能影响后续缓存的复用，即使后面的文字本身没有变化。变化位置之前的缓存仍可能复用，变化后的部分则通常需要重新计算；新的输入计算完成后，可以形成新的缓存，供后续轮次复用。缓存减少重复计算，压缩减少输入内容，两者优化的并不是同一件事。</p>
+<p>一种可供考虑的协调方式是：常规执行时减少不必要的历史改写，需要压缩时接受部分缓存重建的开销。它是否划算，要看后续还有多少步、重建成本有多高，以及压缩后是否仍能保留有效信息。至于 Manus 是否按这些因素做决策、具体如何调度，上述官方文章和访谈笔记没有说明。</p>
+<h3 id="13-目标重述与失败轨迹保留">1.3 目标重述与失败轨迹保留</h3>
+<p>压缩可以控制历史规模，但上下文变短，并不意味着 Agent 就能持续抓住任务目标。它可能一直忙于解决眼前的局部问题，却逐渐偏离原始要求。例如，用户需要一份产品技术对比，Agent 在追查某项功能时不断扩展资料，最后完成了深入的单产品介绍，却没有完成对比。这时缺少的不是更多材料，而是对当前工作与最终目标关系的提醒。</p>
+<p class="lead-statement"><strong>重述目标，让整体计划回到近期上下文。</strong></p>
+<p>2025 年 7 月的官方文章介绍，Manus 会创建并持续更新 <code>todo.md</code>，记录计划和完成进度。官方把这一做法称为<strong>重述</strong>（Recitation）：更新计划时，任务目标再次出现在上下文末尾，从而将整体计划带回模型近期处理的信息中，缓解长上下文中的 <strong>Lost in the Middle</strong> 问题。<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章：Manipulate Attention Through Recitation</a></p>
+<p>从这个机制看，关键不是 <code>todo.md</code> 这个文件名，而是计划内容重新进入下一轮决策的上下文。模型不必只依赖许多轮之前的任务要求，还能参考当前计划，判断接下来是在推进目标，还是继续扩展某个局部问题。它改变的是决策时的信息呈现，不是训练模型获得更强的长期记忆；仅仅把计划存到磁盘上，也不会自动产生这种提醒作用。</p>
+<p class="lead-statement"><strong>由 Planner 组织任务，将规划与执行分开。</strong></p>
+<p>持续重述目标也有维护成本。同年 10 月的访谈笔记补充了调整原因：早期约三分之一的动作花在更新待办列表上，团队随后转向专门的规划 Agent（Planner），由它调用执行子 Agent（Executor）完成分配的任务。这里的“三分之一”指动作数量，不是任务耗时或 Token 成本的精确占比。<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">创始人访谈笔记：规划分工的变化</a></p>
+<p>Planner 通过<strong>函数调用</strong>向 Executor 委派任务，Executor 完成后按约定结构返回结果。<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">创始人访谈笔记：上下文传递与结果返回</a> 这里的重点是规划职责与具体执行的分离；两种上下文传递方式及其取舍，在<a href="#43-%E5%AD%90%E4%BB%BB%E5%8A%A1%E7%9A%84%E4%B8%8A%E4%B8%8B%E6%96%87%E4%BC%A0%E9%80%92%E4%B8%8E%E7%BB%93%E6%9E%84%E5%8C%96%E7%BB%93%E6%9E%9C%E8%BF%94%E5%9B%9E">4.3 子任务交接</a>中展开。</p>
+<p>这项调整体现的是从目标提醒到规划与执行分工的变化。<code>todo.md</code> 通过反复重述计划，让执行中的 Agent 保持对整体目标的关注；Planner 则承担任务分配，把具体工作交给 Executor。两者着力点不同，也不意味着引入 Planner 后就不再需要目标提醒或计划文件。</p>
+<p class="lead-statement"><strong>保留失败轨迹，为后续决策提供纠错依据。</strong></p>
+<p>目标重述提醒模型要完成什么，失败轨迹则让模型看到哪些尝试没有奏效。7 月官方文章在“Keep the Wrong Stuff In”一节中提出，将失败动作及其返回的观察结果或错误堆栈（Stack Trace）留在上下文中，供模型调整后续行动。<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章：Keep the Wrong Stuff In</a></p>
+<p>例如，运行脚本遇到依赖缺失，如果后续上下文只剩“运行失败”，模型很难判断该修改代码、安装依赖，还是换一种执行方式。保留必要的错误信息，才有机会作出针对性的调整。这是通过输入改变后续决策，不是在线更新模型参数，也不意味着模型一定能够正确恢复。</p>
+<p>目标记录和失败记录，最终都应当为后续行动提供依据。从这个角度看，值得保留的是仍未完成的约束，以及会影响下一步选择的失败原因，不一定是每一版待办清单或全部错误堆栈。这是一种信息筛选思路；上述两份材料没有给出 Manus 对这些记录的完整保留与移出规则。</p>
+<h3 id="14-引入结构化变化避免机械重复">1.4 引入结构化变化，避免机械重复</h3>
+<p>批量任务中，Agent 不仅会读取前面获得的信息，也可能模仿前面的做法。例如，前三家公司的价格都能通过“搜索官网—打开定价页—提取价格”找到，但第四家公司并未公开价格，此时就应该调整处理方式，明确记录“未公开”。如果模型过度沿用前面的模式，就可能忽略这个差异，仍试图给出同样形式的价格结论。这是一个说明性例子：问题不在于重复操作本身，而在于情况已经变化，处理方式却没有随之调整。</p>
+<p>2025 年 7 月的官方文章用“Don't Get Few-Shotted”描述这一风险：相似的动作与观察反复出现在上下文中，可能使模型继续模仿已有模式，即使它已不适合当前任务。原文以批量审阅简历为例，指出这种重复可能带来偏离、过度概括或幻觉。<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章：Don't Get Few-Shotted</a> 这里借用了<strong>少样本提示</strong>（Few-shot Prompting）的原理：示例会引导模型的后续行为。区别在于，这些示例不是人为挑选的，而是执行历史无意中形成的。</p>
+<p class="lead-statement"><strong>引入结构化变化，减少机械模仿。</strong></p>
+<p>Manus 将这种做法称为<strong>结构化变化</strong>（Structured Variation）。官方文章列举了三类调整：<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章：Don't Get Few-Shotted</a></p>
+<ul>
+<li><strong>使用不同的序列化模板</strong>（different serialization templates）：调整动作与观察记录组织成模型输入时的呈现模板。</li>
+<li><strong>采用替代表述</strong>（alternate phrasing）：用不同措辞表达同一含义。</li>
+<li><strong>轻微调整顺序或格式</strong>（minor noise in order or formatting）：在记录的排列或格式上引入小幅变化。</li>
+</ul>
+<p class="lead-statement"><strong>引入变化，也要算上缓存重建的成本。</strong></p>
+<p>执行历史不仅提供信息，也会影响模型后续的行动。因此，引入变化的目的不是让格式更多样，而是减少机械模仿，让模型仍能根据当前证据调整处理方式。不过，变化也需要考虑缓存复用：反复改写已有历史可能破坏缓存，而只调整新增记录的表达，不必修改既有前缀。后者是兼顾两者的一种思路，但 Manus 是否采用这种方式，官方文章没有说明。</p>
+<h2 id="2-记忆与状态管理">2. 记忆与状态管理</h2>
+
+<h3 id="21-持久对话项目继承与会话分支">2.1 持久对话、项目继承与会话分支</h3>
+<p>Agents API 为每个 Agent 提供持久的主对话线程（Main Task），用户可以在同一线程中继续提出修改或补充要求。<a href="https://open.manus.ai/docs/v2/agents-overview" target="_blank" rel="noopener">Agents API</a> Project 则保存用户设置的主指令（Master Instruction）与知识库文件（Knowledge Base），供项目中新建的 Session 继承和访问。<a href="https://manus.im/blog/manus-projects" target="_blank" rel="noopener">Introducing Manus Projects</a></p>
+<p>以竞品周报为例，继续修改这周的报告属于对话延续；下周新建报告时沿用写作规范和参考文件，属于项目配置复用。后者不等于自动继承上周的全部对话。</p>
+<p>2026 年 7 月，Manus 推出 Branch：用户可以从某条消息创建新会话，继承分支点之前的指令、上传文件和完整对话历史，之后在独立上下文中继续，原会话保持不变。<a href="https://manus.im/blog/manus-branch" target="_blank" rel="noopener">Introducing Branch</a> 与 Project 复用共同配置不同，Branch 复用的是已经积累的任务历史。</p>
+<p class="lead-statement"><strong>三种机制延续的信息不同。</strong></p>
+<p>主对话线程继续同一项工作，Project 为新任务提供共同配置，Branch 则从既有历史中的某个位置分出新路径。这些文档解释了信息如何延续和复用，但没有展开历史记录怎样恢复到模型输入中，也没有说明项目知识库的检索、筛选与注入算法。</p>
+<h3 id="22-项目指令与知识库的更新机制">2.2 项目指令与知识库的更新机制</h3>
+<p>沿用周报的例子：报告已经写了一半，用户一边修改项目指令，要求结论更简洁，一边替换知识库中的产品名单。两项更新都合理，但对正在进行的任务影响不同。调整文字风格通常不需要重做调查，替换研究名单却可能改变分析范围，让前半篇和后半篇使用不同依据。</p>
+<p>所以，记忆更新不仅是把新内容保存下来，还要决定它从什么时候影响工作。这是<strong>更新可见性</strong>的问题：某项修改已经存在于项目中，不代表所有正在运行的会话都会立即采用。更新太慢，会继续沿用过时要求；更新太快，又可能打断已有工作的连续性。</p>
+<p class="lead-statement"><strong>项目指令与文件采用不同的更新规则。</strong></p>
+<p>Manus 官方 Projects 发布文章末尾的常见问题分别说明了指令和文件的更新规则。不过，同一回答随后又笼统称旧会话不受配置更新影响，与指令更新的例外不完全一致。下面依据其中分项列出的具体规则说明：<a href="https://manus.im/blog/manus-projects" target="_blank" rel="noopener">Projects FAQ：配置更新</a></p>
+<ul>
+<li><strong>修改项目指令：当前会话下一轮生效。</strong>例如，把写作要求改为“结论更简洁”，继续在原会话发送消息，就会应用新要求，不必新建任务。</li>
+<li><strong>替换项目文件：新建会话才会采用。</strong>例如，更新知识库中的产品名单，已有会话不会自动同步这次修改；之后在项目中新建的会话才会使用新版名单。</li>
+</ul>
+<p>如果正在进行的任务也需要新版名单，可以直接把文件补充给当前会话，而不必重新开始。官方 <code>task.sendMessage</code> 接口支持向已有任务发送带附件的后续消息。<a href="https://open.manus.ai/docs/v2/task.sendMessage" target="_blank" rel="noopener">task.sendMessage：附加文件</a> 这是主动向当前任务提供材料，与从项目知识库自动继承更新是两条不同路径。</p>
+<p>主动补充新文件，不等于自动覆盖旧文件或修正已有报告。最好同时说明新旧版本的关系，以及哪些结果需要重新检查。例如：</p>
+<blockquote>
+<p>请以这份新版名单替代之前的版本，检查已有分析，补充遗漏的产品，并修正受影响的结论。</p>
+</blockquote>
+<p class="lead-statement"><strong>及时生效，不等于前后内容自动一致。</strong></p>
+<p>假设报告做到一半，用户把“只研究国内产品”改成“同时覆盖海外产品”。新指令即使已经进入下一轮，前面形成的样本和比较结论仍然需要重新检查。更新机制解决了新要求何时可见，Agent 还要判断哪些既有工作受影响，是否需要补查、重算或重写。这是配置生效之后的另一项决策。</p>
+<p>文件更新也存在相反的风险：旧会话保持原有材料，有利于延续已有分析，却可能继续使用已被纠正的数据。因此，稳定和新鲜并不能只靠一条统一规则同时满足。对最终报告来说，更重要的是能说明使用了哪份材料、哪些结论需要随版本变化重新核实。</p>
+<p class="lead-statement"><strong>记忆系统保存的不只是内容，还应帮助任务判断内容是否仍然适用。</strong></p>
+<p>Manus 的 FAQ 展示了两类信息的更新边界；真正影响长任务可靠性的，则是更新发生后，系统能否识别受影响的工作，而不只是继续沿着旧结果往下写。</p>
+<h3 id="23-项目记忆写回">2.3 项目记忆写回</h3>
+<p>项目继承解决了已有要求如何复用，却没有自动解决新经验从哪里来。一份周报经过几轮修改，可能才确定适合团队的结构、术语和引用方式。如果这些改进只留在本次对话里，下周新建 Session 时，继承的仍然是修改前的项目配置。</p>
+<p class="lead-statement"><strong>先提出更新，经用户批准再写回项目。</strong></p>
+<p>2026 年 5 月，Manus 官方介绍，系统可以从对话中提出对<strong>项目指令、文件和 Skills</strong> 的更新建议，经用户批准后应用。<a href="https://manus.im/blog/manus-projects-self-updating" target="_blank" rel="noopener">Projects That Learn From Every Task</a></p>
+<p>把这一流程放回周报场景，可以这样理解：</p>
+<pre><code class="language-text">本次报告经过讨论和修改
+          ↓
+识别值得沿用的要求与方法
+          ↓
+提出项目更新建议，交由用户审阅
+          ↓
+批准后修改指令、文件或 Skills
+          ↓
+后续任务从更新后的项目配置开始
+</code></pre>
+<p>从效果上看，这相当于把一次任务中的经验整理成后续任务可用的规则和资料。官方披露的“学习”通过更新项目配置实现，并不意味着模型参数发生了变化。</p>
+<p class="lead-statement"><strong>临时要求不应直接变成长期规则。</strong></p>
+<p>例如，用户这次说“报告短一点”，可能只是为了快速浏览。如果系统把它记成“所有报告都要简短”，下次需要深入分析时，就可能省略必要的技术细节。写入项目配置之前，需要判断这项要求只适用于本次任务，还是以后也应遵循。</p>
+<p>用户审阅时，还需检查建议是否保留了原有条件、是否与已有规则冲突。这篇官方介绍没有展开系统如何自动判断经验的适用范围或处理这些冲突。<a href="https://manus.im/blog/manus-projects-self-updating" target="_blank" rel="noopener">Projects That Learn From Every Task</a></p>
+<p class="lead-statement"><strong>如果用户不必反复交代相同标准，而新的任务仍能按自身要求展开，才说明这些记忆真正帮助了工作。</strong></p>
+<h2 id="3-工具使用与执行环境">3. 工具使用与执行环境</h2>
+
+<h3 id="31-分层动作空间通过基础工具调用沙箱程序">3.1 分层动作空间：通过基础工具调用沙箱程序</h3>
+<p>处理文件、运行分析和调用外部服务，并不要求每项能力都对应一个直接暴露给模型的函数。接口如何组织，会影响模型选择工具和编写程序的负担。</p>
+<p class="lead-statement"><strong>基础工具提供入口，沙箱程序承载具体能力。</strong></p>
+<p>2025 年 10 月的创始人访谈笔记将其称为<strong>分层动作空间</strong>（Layered Action Space）：当时模型直接使用少量原子函数，包含 Bash、文件管理和代码执行；更多程序在沙箱中运行，MCP 工具也可通过命令行使用。<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">Context Engineering in Manus：Tool Definitions</a></p>
+<p>下面用简化示意说明这种分层，而非还原 Manus 的真实函数名称和全部调用路径：</p>
+<pre><code class="language-text">模型选择基础工具
+        ↓
+Bash / 文件操作 / 代码执行
+        ↓
+沙箱程序、脚本或 MCP 命令行接口
+        ↓
+结果返回模型，或写入文件供后续读取
+</code></pre>
+<p>以表格分析为例：模型调用 Bash 执行 Python 脚本，由脚本使用数据分析和绘图库完成统计、排序与画图，不必为这三项操作分别定义模型工具。这里的分层指调用入口与程序能力的关系，而不是调用步骤的多少。</p>
+<p>脚本还提供了减少模型往返的机会：流程明确且无需模型逐步判断时，统计、排序和画图可以在一次执行中完成，中间数据留在程序中，只将必要结果返回模型。这可能减少调用轮次和上下文负担，但属于程序化执行的潜在收益，不是上述访谈已经验证的性能结论。</p>
+<p class="lead-statement"><strong>工具分层减少了接口负担，也把更多工作交给了模型。</strong></p>
+<p>通用入口减少了常驻上下文的工具定义，但模型仍需选择程序、组织参数，必要时编写脚本，并在失败后调整。因此，这种分层能否带来收益，还取决于模型能否可靠地组织程序调用，避免省下的上下文成本被反复试错抵消。</p>
+<h3 id="32-保留工具定义约束当前可选动作">3.2 保留工具定义，约束当前可选动作</h3>
+<p class="lead-statement"><strong>需要变化的是可选动作，而不一定是工具列表。</strong></p>
+<p>假设模型可以调用打开网页、点击网页和执行命令三个工具，但某一轮只允许使用浏览器工具。最直接的处理是把“执行命令”从工具列表中删掉。不过，工具定义通常位于输入前部，修改它们会影响后续缓存复用；历史中如果还有这个工具的调用记录，也可能出现“之前用过，现在却找不到定义”的不一致。Manus 的官方文章正是基于这两点，提出尽量避免在执行过程中动态增删工具。<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章：Mask, Don't Remove</a></p>
+<p>这里需要区分两层：<strong>工具清单</strong>说明系统有哪些能力，<strong>当前动作范围</strong>说明这一轮允许模型从中选择什么。Manus 公开了三种相互配合的机制：<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章：约束动作空间</a></p>
+<ol>
+<li><strong>上下文感知状态机</strong>（Context-aware State Machine）：根据当前任务状态确定允许调用的工具集合，而不是替模型决定某个网页上的具体操作。</li>
+<li><strong>响应预填</strong>（Response Prefill）：预先给出工具调用输出的开头，例如以 <code>{&quot;name&quot;:&quot;browser_</code> 引导模型进入浏览器工具命名空间。这个片段只是对原文机制的说明，不代表 Manus API 的实际格式。</li>
+<li><strong>Token Logit Masking</strong>：在解码阶段屏蔽不允许出现的工具名称 Token，让模型只能从当前许可集合中继续生成。</li>
+</ol>
+<p>三者的关系是：状态机确定范围，响应预填和解码约束把范围落实到本轮生成。官方文章还区分了自动选择、必须调用工具和指定工具等模式，因此这并不意味着每一轮都必须执行某个工具。完整状态定义、转换条件和异常恢复规则没有公开。</p>
+<p class="lead-statement"><strong>稳定的工具定义服务于缓存与历史一致性，动态约束服务于当下决策。</strong></p>
+<p>这种设计把“系统具有什么能力”与“当前允许做什么”分开，但其可靠性仍取决于状态识别是否准确，以及约束是否覆盖了实际风险。</p>
+<h3 id="33-用-skills-组织可复用方法按需加载详细说明">3.3 用 Skills 组织可复用方法，按需加载详细说明</h3>
+<p>工具提供可执行能力，Skills 则组织如何使用这些能力完成一类工作。若所有工作方法都常驻系统提示词，随着能力增加，上下文会不断膨胀；若完全依靠临场规划，又可能重复犯错。</p>
+<p class="lead-statement"><strong>先识别 Skill，再按需展开指令与资源。</strong></p>
+<p>Manus 在 2026 年 1 月介绍，Skill 以文件系统中的工作流包存在：模型首先只看到名称和描述，匹配到任务后再读取 <code>SKILL.md</code>，并按需加载脚本、参考资料和素材。<a href="https://manus.im/blog/manus-skills" target="_blank" rel="noopener">Agent Skills</a></p>
+<ul>
+<li><strong>元数据常驻</strong>：名称和描述用于判断何时启用。</li>
+<li><strong>详细指令后载入</strong>：选中后再读取具体步骤，避免所有说明同时进入上下文。</li>
+<li><strong>资源继续按需读取</strong>：脚本、参考文件和素材只在执行需要时加载。</li>
+</ul>
+<p>Skills 与 MCP 处于不同层次：MCP 主要提供外部工具或数据接口，Skill 则可以把这些工具与本地脚本、操作规则组合成完整方法。前者回答“能调用什么”，后者回答“这类任务应怎样完成”。</p>
+<p class="lead-statement"><strong>渐进式加载节省上下文，也把路由压力集中到描述上。</strong></p>
+<p>如果名称和描述不能准确区分使用场景，模型可能漏掉合适的 Skill，或选中相似但不适用的流程。因此，按需加载的效果不仅取决于正文质量，还取决于入口描述是否足以支持正确选择。</p>
+<h3 id="34-云端与本地执行环境">3.4 云端与本地执行环境</h3>
+<p class="lead-statement"><strong>执行环境决定工具能访问什么，以及文件和程序能保留多久。</strong></p>
+<p>有的任务只需要一次性的隔离环境，有的任务需要跨任务保留软件和数据；有的操作依赖用户浏览器中的登录状态，还有的工作必须访问本机文件和命令。Manus 公开资料中的几类环境对应了这些不同需求。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>执行方式</th>
+<th>在哪里运行</th>
+<th>能访问什么</th>
+<th>文件与运行状态如何保留</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sandbox</strong></td>
+<td>每个任务的独立云端虚拟机</td>
+<td>上传材料、生成文件、网络、浏览器和沙箱程序</td>
+<td>与任务关联保留，但环境可能回收。2026 年 1 月文档称休眠时文件不变；回收后恢复交付物、附件和部分重要文件，不恢复运行中的中间代码与临时文件。<a href="https://manus.im/blog/manus-sandbox" target="_blank" rel="noopener">Understanding Manus Sandbox</a></td>
+</tr>
+<tr>
+<td><strong>Cloud Computer</strong></td>
+<td>用户的持久云端计算机</td>
+<td>跨任务的数据、文件、软件和数据库；不能直接访问用户本机文件</td>
+<td>支持跨任务持续使用和后台运行，但不是无条件永久保存；停止付费后工作文件会被删除。<a href="https://manus.im/blog/manus-cloud-computer" target="_blank" rel="noopener">Cloud Computer</a></td>
+</tr>
+<tr>
+<td><strong>Browser Operator</strong></td>
+<td>用户已授权的本地 Chrome 或 Edge</td>
+<td>已登录网站、内部系统和订阅内容</td>
+<td>依赖本地浏览器会话，并不等同于持久云电脑。<a href="https://manus.im/blog/deep-dive-browser-operator-connector" target="_blank" rel="noopener">Browser Operator</a></td>
+</tr>
+<tr>
+<td><strong>My Computer</strong></td>
+<td>通过 Manus Desktop CLI 在用户本机执行</td>
+<td>本机文件、工具与算力</td>
+<td>远程执行时电脑需开机且桌面应用运行；命令可选择单次允许或持续允许。<a href="https://manus.im/blog/manus-my-computer-desktop" target="_blank" rel="noopener">Introducing My Computer</a></td>
+</tr>
+</tbody>
+</table></div>
+<p>官方材料对 Sandbox 的概括并不完全一致：2026 年 1 月的生命周期文档具体说明了回收与恢复范围，后续 Cloud Computer FAQ 则用更简化的方式区分临时 Sandbox 与持久 Cloud Computer。这里采用前者描述具体生命周期，同时保留版本变化或文档简化的可能。</p>
+<p class="lead-statement"><strong>环境选择本质上是在隔离、持续性与访问范围之间取舍。</strong></p>
+<p>Sandbox 适合单任务隔离执行；Cloud Computer 解决跨任务环境延续；Browser Operator 借用本地浏览器身份；My Computer 则把执行范围扩展到本机。环境能否恢复还会影响长任务如何续跑，<a href="#53-%E8%BF%9B%E5%BA%A6%E4%BF%9D%E7%95%99%E4%B8%8E%E4%BB%BB%E5%8A%A1%E6%81%A2%E5%A4%8D">5.3 节</a>进一步讨论计划状态与文件状态的对应关系。</p>
+<h2 id="4-多-agent-架构与协作机制">4. 多 Agent 架构与协作机制</h2>
+
+<h3 id="41-规划执行与知识管理的职责分工">4.1 规划、执行与知识管理的职责分工</h3>
+<p class="lead-statement"><strong>规划需要掌握全局，执行需要深入细节。</strong></p>
+<p>做一份多产品调研，既要决定比较哪些能力、哪些资料还缺，也要逐个打开网页、运行脚本和核对文件。这两类决策需要的信息不同：判断调研是否完整，需要掌握全局要求和各部分进度；处理某个网站的解析错误，则需要深入具体页面和错误记录。</p>
+<p>如果所有工作都放在同一条执行历史里，规划下一步时也会携带大量局部操作细节。拆出子 Agent 的价值，是让这些细节先在各自的任务中处理，再把影响整体安排的结果交回来。这里划分的是工作范围和信息范围，而不只是给同一个模型换几个角色名称。</p>
+<p class="lead-statement"><strong>按规划、执行与知识整理分工，而不是为每种技能设置一个专家。</strong></p>
+<p>2025 年 10 月 15 日，Lance Martin 整理的创始人访谈笔记介绍了三类职责，并将子 Agent 的主要目的概括为“isolate context”，即隔离上下文。<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">Context Engineering in Manus：Context Isolation</a></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>角色</th>
+<th>访谈描述的职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Planner：规划者</strong></td>
+<td><strong>分配任务。</strong>调用执行子 Agent 完成具体工作。</td>
+</tr>
+<tr>
+<td><strong>Executor：执行者</strong></td>
+<td><strong>执行分配的任务。</strong>处理具体操作并返回结果。</td>
+</tr>
+<tr>
+<td><strong>Knowledge Manager：知识管理者</strong></td>
+<td><strong>整理需要留下的信息。</strong>审阅对话，判断哪些内容应保存到文件系统。</td>
+</tr>
+</tbody>
+</table></div>
+<p>两种设计的区别，在于把哪些能力预先固定下来，把哪些选择留给执行过程。专家模式通过专门的指令、工具和领域知识适配稳定场景，但需要处理专家选择与跨角色交接。通用 Executor 则可以围绕同一项调查完成搜索、编程和整理，保留更多自主空间，也更依赖自身的任务理解、工具选择和错误处理能力。</p>
+<p>两者也可以结合：Planner 既可以调度通用执行者，也可以在特定环节调用专门配置的 Agent。<strong>这份披露体现的是职责分工与上下文隔离，不能据此认定 Manus 完全不存在专门化设计。</strong></p>
+<p>职责拆开之后，规划者不必重读每一次网页抓取和报错，却需要知道哪些问题尚未解决。例如，“抓取失败了三次”未必影响整体安排，但“没有找到可验证的定价依据”就需要传回，供规划者决定是否继续调查或保留未知项。</p>
+<p>返回全部历史，会重新增加上下文负担；只返回“已完成”，又不足以支持下一步判断。<strong>分工的价值，在于让局部操作独立展开，同时保留整体决策需要的依据。</strong>具体如何传递任务背景、约定返回结果的结构，在<a href="#43-%E5%AD%90%E4%BB%BB%E5%8A%A1%E7%9A%84%E4%B8%8A%E4%B8%8B%E6%96%87%E4%BC%A0%E9%80%92%E4%B8%8E%E7%BB%93%E6%9E%84%E5%8C%96%E7%BB%93%E6%9E%9C%E8%BF%94%E5%9B%9E">4.3 节</a>展开。</p>
+<h3 id="42-wide-research通用实例的并行执行与集中汇总">4.2 Wide Research：通用实例的并行执行与集中汇总</h3>
+<p>调查公司 A 时，通常不需要同时携带公司 B 的网页、脚本和错误记录。如果让一个 Agent 顺序处理所有公司，后面的调查就会持续带着前面对象的细节。把各公司的调查拆开，既有机会缩短等待时间，也能让每个执行者集中处理自己的材料。</p>
+<p>这与上一节的职责划分侧重点不同：规划与执行分工区分“谁安排、谁完成”，Wide Research 则把大量可独立完成的工作分发出去，同时推进。</p>
+<p class="lead-statement"><strong>主控分发任务，通用实例并行执行，再集中汇总。</strong></p>
+<p>2025 年 10 月 29 日，官方《Wide Research: Beyond the Context Window》描述了集中协调的并行机制：Main Controller 拆分任务，每个子任务由完整的 Manus 实例执行；各实例拥有独立上下文、虚拟机和工具能力。子 Agent 之间不直接通信，结果交给主控，再由主控汇总。<a href="https://manus.im/blog/manus-wide-research-solve-context-problem" target="_blank" rel="noopener">Wide Research：The Wide Research Architecture</a></p>
+<pre><code class="language-text">主控：确定要求，拆分调查任务
+├─ Manus 实例 A：调查公司 A
+├─ Manus 实例 B：调查公司 B
+└─ Manus 实例 C：调查公司 C
+   各自使用独立上下文与执行环境
+   子 Agent 之间不直接交换消息
+                ↓
+          主控比较与汇总
+</code></pre>
+<p>这里的独立上下文，不是让子 Agent 在没有任务说明的情况下工作，而是不必让它继承其他对象不断累积的调查历史。各实例仍然需要知道负责哪个对象、调查什么，以及最后交回什么；这些要求是否清楚，会直接影响结果能否放在一起比较。</p>
+<p class="lead-statement"><strong>Wide Research 的关键，是找出可以独立推进的工作。</strong></p>
+<p>分别收集几家公司的公开资料，可以同时进行；根据所有公司的结果形成排名，则需要等待调查完成。如果某项工作依赖前一步尚未得出的结论，提前分发只会迫使执行者自行假设，后面还得重新对齐。官方也明确将高度顺序依赖的任务列为不适合 Wide Research 的情形。<a href="https://manus.im/blog/manus-wide-research-solve-context-problem" target="_blank" rel="noopener">Wide Research：When not to use</a></p>
+<p>因此，拆分时最重要的是划清依赖关系：哪些工作可以各自完成，哪些判断必须留到汇总阶段。并行可以减少顺序等待，却会增加任务分发、结果检查和整合的工作，不能只凭并发数量判断效率。</p>
+<h3 id="43-子任务的上下文传递与结构化结果返回">4.3 子任务的上下文传递与结构化结果返回</h3>
+<p>“调查公司 A”并不是一份充分的任务说明。执行者还需要知道研究范围、资料时间和证据要求；否则，即使独立完成了调查，也可能与其他结果无法比较。返回时同样如此：如果各自交回一篇写法不同的长报告，主控仍要重新寻找结论、来源与缺失项。</p>
+<p>所以，协作需要同时处理输入和输出：给子 Agent 足够完成工作的背景，又让返回结果便于主控继续决策。前者影响能不能做对，后者影响做完后能不能接着用。</p>
+<p class="lead-statement"><strong>Planner 下发任务并约定结果，子 Agent 执行后通过工具提交。</strong></p>
+<p>关于交接的具体方式，可以回到 Lance Martin 于 2025 年 10 月 15 日整理的创始人访谈笔记。它描述的是 Planner 与 Executor 的协作，没有说明 Wide Research 是否沿用同一机制。其中的任务传递、返回结构约定和结果提交，可以整理为三个环节：<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">Context Engineering in Manus：Context Isolation</a></p>
+<ul>
+<li><strong>任务与上下文传递。</strong>对简单、独立的任务，Planner 通过函数调用向执行子 Agent 传递指令；需要更多前序背景的复杂任务，可以共享 Planner 的完整上下文，子 Agent 仍保留自己的指令和工具。</li>
+<li><strong>返回结构约定。</strong>Planner 定义输出 Schema，也就是子 Agent 返回结果时需要遵守的字段和结构。两种上下文传递方式都使用这项约定。</li>
+<li><strong>结果提交。</strong>子 Agent 完成工作后，调用 <code>submit results</code> 工具，按约定结构提交结果，再返回给 Planner。访谈提到使用约束解码保证结构符合要求，但格式正确不代表内容一定正确。</li>
+</ul>
+<p class="lead-statement"><strong>简单任务传递指令，复杂任务可以共享完整上下文。</strong></p>
+<p>访谈给出了两种方式的定性适用情形，但没有展开具体判定规则，也未说明选择由模型还是程序完成。<a href="https://rlancemartin.github.io/2025/10/15/manus/#context-isolation" target="_blank" rel="noopener">创始人访谈笔记：Context Isolation</a> 从信息交接的角度看，它们各有好处和代价：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>方式</th>
+<th>好处</th>
+<th>代价</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>指令式交接。</strong>传递任务指令，不附带完整历史。</td>
+<td><strong>输入集中。</strong>子 Agent 不必携带整段历史，可以专注于明确的子任务。</td>
+<td><strong>依赖 Planner 交代充分。</strong>如果遗漏前序约束，执行者可能重复调查或沿着错误方向工作。</td>
+</tr>
+<tr>
+<td><strong>完整上下文交接。</strong>将 Planner 的完整上下文提供给子 Agent。</td>
+<td><strong>减少交接时的信息遗漏。</strong>执行者可以了解此前的要求、决策和工作经过。</td>
+<td><strong>输入更重。</strong>无关历史也可能一并进入，需要执行者自行识别重点；完整传递不等于有效理解。</td>
+</tr>
+</tbody>
+</table></div>
+<p>这里值得关注的，是<strong>信息筛选由谁承担</strong>：指令式交接要求 Planner 提前判断哪些背景重要；完整上下文交接则减少了这一步的取舍，但增加了执行者的阅读和筛选负担。</p>
+<p>如果进一步考虑其他交接方式，还可以借鉴 Anthropic 的即时上下文检索：保留文件路径、链接等轻量引用，需要时再通过工具读取材料。<a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">Anthropic：Context retrieval and agentic search</a></p>
+<p>据此可以设计一种折中方案：<strong>先给任务简报和资料入口，缺什么再读取。</strong>例如先传目标、关键约束和已有结论，再提供原始文件路径，让执行者按需补充背景。这是由检索机制延伸出的交接思路，并非 Manus 已披露的第三种模式；它减少了预先传入的内容，也增加了补查步骤，更依赖执行者判断自己缺少什么。</p>
+<p class="lead-statement"><strong>上下文传递不是单纯选择“传多还是传少”，而是在交接时的信息遗漏、执行时的信息负担，以及后续补查成本之间做取舍。</strong></p>
+<h2 id="5-长程任务的关键机制">5. 长程任务的关键机制</h2>
+
+<h3 id="51-任务规划上下文管理与执行反馈">5.1 任务规划、上下文管理与执行反馈</h3>
+<p class="lead-statement"><strong>先明确目标与计划，再安排具体工作。</strong></p>
+<p>长程任务中的规划，不只是开头列一次清单，还要在执行中持续判断当前工作是否推进了交付目标。第四章介绍的<a href="#41-%E8%A7%84%E5%88%92%E6%89%A7%E8%A1%8C%E4%B8%8E%E7%9F%A5%E8%AF%86%E7%AE%A1%E7%90%86%E7%9A%84%E8%81%8C%E8%B4%A3%E5%88%86%E5%B7%A5">规划与执行分工</a>，将这种整体安排与局部操作分开，避免执行细节淹没研究范围、证据标准和剩余目标。</p>
+<p>在用户交互层面，2026 年 7 月发布的 Plan Mode 提供了计划审阅入口。用户手动启用后，Manus 会澄清缺失信息，生成包含目标、步骤与约束的 Markdown 计划；用户可以编辑，确认或关闭计划环节后再进入构建。<a href="https://manus.im/blog/manus-plan-mode" target="_blank" rel="noopener">Introducing Plan Mode</a> 它让用户参与方向确认，与内部 Planner 的任务分配职责不同，不能仅凭名称将两者视为同一个组件。</p>
+<p class="lead-statement"><strong>让目标和必要信息持续进入后续决策。</strong></p>
+<p><a href="#13-%E7%9B%AE%E6%A0%87%E9%87%8D%E8%BF%B0%E4%B8%8E%E5%A4%B1%E8%B4%A5%E8%BD%A8%E8%BF%B9%E4%BF%9D%E7%95%99">目标重述</a>让整体计划回到近期上下文，<a href="#11-%E7%A8%B3%E5%AE%9A%E5%89%8D%E7%BC%80%E4%B8%8E-kv-cache-%E5%A4%8D%E7%94%A8">稳定前缀与 KV-cache 复用</a>减少重复计算。随着资料增多，始终携带全部历史会增加负担，<a href="#12-%E4%B8%8A%E4%B8%8B%E6%96%87%E5%A4%96%E7%BD%AE%E4%B8%8E%E5%88%86%E9%98%B6%E6%AE%B5%E5%8E%8B%E7%BC%A9">外置与压缩</a>提供了缩减常驻内容、保留必要依据的办法。</p>
+<p>如果调查中有可独立处理的部分，还可以通过<a href="#43-%E5%AD%90%E4%BB%BB%E5%8A%A1%E7%9A%84%E4%B8%8A%E4%B8%8B%E6%96%87%E4%BC%A0%E9%80%92%E4%B8%8E%E7%BB%93%E6%9E%84%E5%8C%96%E7%BB%93%E6%9E%9C%E8%BF%94%E5%9B%9E">子任务交接</a>让执行者处理局部细节，主控根据返回结果继续安排工作。处理多个相似对象时，又要避免前面的做法变成默认答案，<a href="#14-%E5%BC%95%E5%85%A5%E7%BB%93%E6%9E%84%E5%8C%96%E5%8F%98%E5%8C%96%E9%81%BF%E5%85%8D%E6%9C%BA%E6%A2%B0%E9%87%8D%E5%A4%8D">结构化变化</a>针对的正是这种干扰。</p>
+<p>这些机制处理的是任务推进中出现的不同问题，不是依次执行的固定步骤；无论历史被压缩还是工作被交接，后续判断仍需接上原有目标、关键约束与尚未解决的问题。</p>
+<p class="lead-statement"><strong>利用执行反馈，判断原来的做法是否仍然适用。</strong></p>
+<p>执行遇到新问题时，<a href="#13-%E7%9B%AE%E6%A0%87%E9%87%8D%E8%BF%B0%E4%B8%8E%E5%A4%B1%E8%B4%A5%E8%BD%A8%E8%BF%B9%E4%BF%9D%E7%95%99">失败轨迹</a>让后续决策知道哪些尝试没有奏效，为调整方法提供依据，减少重复沿用无效路径的可能。</p>
+<p>方向调整也可以由用户主动发起。长任务开始时，不一定能确定所有细节；用户可以在任务中途启用 Plan Mode，根据已经完成的工作重新审阅下一阶段的安排，调整目标与范围，再让 Agent 继续执行。<a href="https://manus.im/blog/manus-plan-mode" target="_blank" rel="noopener">Introducing Plan Mode：Enable It Anytime, Even Mid-Task</a> 这将用户确认方向的时机从任务开始前扩展到了任务推进过程中。</p>
+<h3 id="52-用户交互信息补充与操作确认">5.2 用户交互：信息补充与操作确认</h3>
+<p class="lead-statement"><strong>缺少必要信息或操作授权时，任务需要暂停等待。</strong></p>
+<p>长程任务不一定能完全自主完成。遇到需要用户补充的信息，或尚未获准的外部操作时，系统需要保留当前任务状态，等待用户响应后再继续，而不是让 Agent 自行猜测或反复尝试。</p>
+<p class="lead-statement"><strong>用任务状态区分运行、等待与结束。</strong></p>
+<p>Task Lifecycle 文档说明，任务创建后异步执行，通过状态事件区分 <code>running</code>（运行中）、<code>waiting</code>（等待输入或确认）、<code>stopped</code>（该文档中表示任务完成）和 <code>error</code>（任务失败）。任务进入等待状态后，接入程序需要区分：如果 Agent 在向用户提问，就通过消息接口补充答案；如果在等待某项操作的批准，就通过动作确认接口提交用户的决定。<a href="https://open.manus.ai/docs/v2/task-lifecycle" target="_blank" rel="noopener">Task Lifecycle：Task status / Handling waiting status</a></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>等待原因</th>
+<th>接口处理方式</th>
+<th>解决的问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>缺少用户信息。</strong>对应 <code>messageAskUser</code> 或 <code>cascadeAskUser</code>。</td>
+<td><strong>回复问题。</strong>使用 <code>task.sendMessage</code> 补充信息。</td>
+<td><strong>明确接下来怎么做。</strong>例如选择导出格式或补充任务要求。</td>
+</tr>
+<tr>
+<td><strong>等待操作确认。</strong>对应接口支持的动作事件。</td>
+<td><strong>响应具体动作。</strong>使用 <code>task.confirmAction</code>，按该事件要求提交参数。</td>
+<td><strong>处理待确认的操作。</strong>例如批准发送邮件，或选择保存草稿。</td>
+</tr>
+</tbody>
+</table></div>
+<p>是否需要逐次确认，还取决于操作要求和已有授权：例如，<a href="#34-%E4%BA%91%E7%AB%AF%E4%B8%8E%E6%9C%AC%E5%9C%B0%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83">My Computer</a>支持持续允许命令，<a href="#54-%E5%91%A8%E6%9C%9F%E6%89%A7%E8%A1%8C%E4%B8%8E%E4%B8%8A%E4%B8%8B%E6%96%87%E5%A4%8D%E7%94%A8">定时任务</a>可为可信工作流配置跳过部分操作确认。</p>
+<p>上述机制处理的是等待用户响应后的继续执行；如果任务因服务异常而中断，或所需文件已经丢失，还需要核对进度与实际工作状态。</p>
+<h3 id="53-进度保留与任务恢复">5.3 进度保留与任务恢复</h3>
+<p>计划记录可以写着“数据清洗完成”，但如果清洗后的文件已经丢失，下一步仍无法直接开始。反过来，文件都在，如果缺少完成状态与剩余目标，也可能重复工作。任务恢复需要让进度描述与实际产物相互对应。</p>
+<p class="lead-statement"><strong>计划有快照，文件恢复有范围。</strong></p>
+<p><code>task.listMessages</code> 在 <code>verbose=true</code> 时可返回完整计划快照 <code>plan_update</code> 和新增步骤 <code>new_plan_step</code>；步骤状态包括 <code>todo</code>、<code>doing</code>、<code>done</code> 和 <code>failed</code>。这些事件让调用方观察当前计划与步骤进展。<a href="https://open.manus.ai/docs/v2/task.listMessages" target="_blank" rel="noopener">task.listMessages：verbose / plan_update / new_plan_step</a></p>
+<p>执行材料能否保留，则受环境生命周期影响。按 2026 年 1 月的 Sandbox 文档，沙箱回收后会恢复交付物、上传附件及部分重要文件，但不恢复执行中的中间代码和临时文件。<a href="https://manus.im/blog/manus-sandbox" target="_blank" rel="noopener">Sandbox 生命周期</a> 具体保留范围及官方材料的表述差异，见<a href="#34-%E4%BA%91%E7%AB%AF%E4%B8%8E%E6%9C%AC%E5%9C%B0%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83">3.4 节</a>。</p>
+<p>计划快照说明工作进行到哪里，文件恢复决定哪些产物仍可使用。两者需要对应起来，才能判断后续工作是否具备继续执行的条件。</p>
+<p class="lead-statement"><strong>任务恢复的关键，是判断哪些工作可以沿用，哪些需要补做。</strong></p>
+<p>恢复后，不能只按照计划中的“已完成”继续执行，还需要检查下一步依赖的文件是否可用，以及此前的外部操作是否已经生效。缺失的数据可能需要重新生成，状态不明的邮件发送则应先核实，避免重复执行。进度记录提供恢复线索，但能否可靠地继续，取决于系统能否据此判断：哪些结果可以复用，哪些步骤需要重做，哪些操作必须先确认。</p>
+<h3 id="54-周期执行与上下文复用">5.4 周期执行与上下文复用</h3>
+<p class="lead-statement"><strong>定时任务可以接着原任务运行，也可以每次独立开始。</strong></p>
+<p>2026 年 5 月的 Scheduled Tasks 2.0 允许用户选择：继续同一任务，沿用已有指令、文件、对话和结果；或每次创建独立任务。定时任务也可关联 Project，复用文件、Skills、连接器和指令，并为可信工作流配置跳过发送、发布等操作的例行确认。<a href="https://manus.im/blog/manus-schedules" target="_blank" rel="noopener">Introducing Scheduled Tasks 2.0</a> 该文章没有说明每次运行是否重新加载更新后的项目配置。</p>
+<h2 id="6-总结与思考">6. 总结与思考</h2>
+<p class="lead-statement"><strong>长程任务的关键，是变化之后仍能延续正确的决策。</strong></p>
+<p>贯穿前面几章的，是同一个问题：任务推进过程中，信息和执行条件不断变化，后续工作怎样接上已经形成的目标、约束与结果？</p>
+<ul>
+<li><strong>上下文压缩后</strong>，关键依据不能随历史细节一起丢失。</li>
+<li><strong>资料更新后</strong>，需要重新检查受影响的结论。</li>
+<li><strong>任务交给子 Agent 后</strong>，执行者需要理解背景，主控也需要拿到足以继续判断的结果。</li>
+<li><strong>中断恢复后</strong>，还要确认此前的进度是否有实际产物支撑。</li>
+</ul>
+<p>从<a href="#1-%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AE%A1%E7%90%86">上下文管理</a>到<a href="#5-%E9%95%BF%E7%A8%8B%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%85%B3%E9%94%AE%E6%9C%BA%E5%88%B6">长程任务</a>，这些机制共同指向的，不只是让 Agent 持续运行，而是让后续决策仍有可靠的依据。</p>
+<p class="lead-statement"><strong>局部机制的价值，要放到完整任务中衡量。</strong></p>
+<p>上下文更短、缓存命中更多、并行实例更多，都不能单独说明任务完成得更好。压缩节省的输入成本，可能被重新查找材料的开销抵消；并行减少的等待时间，也可能被结果核对与整合消耗。因此，评价这些设计，需要把最终交付质量、完成任务的总时间与成本，以及用户需要纠正和补充多少工作放在一起看。局部指标有助于定位问题，完整任务的表现才说明这些机制是否真正形成了收益。</p>
+<p class="lead-statement"><strong>框架要弥补当前模型的不足，也要为模型进步留出空间。</strong></p>
+<p>评价机制是否有效，还需要考虑基础模型的变化。2025 年 10 月的访谈笔记记录了 Peak 的建议：用不同能力的模型评测 Agent，如果换成更强的模型后效果没有改善，就需要检查框架是否限制了它的发挥。<a href="https://rlancemartin.github.io/2025/10/15/manus/#build-with-the-bitter-lesson-in-mind" target="_blank" rel="noopener">创始人访谈笔记：Build with the Bitter Lesson in Mind</a></p>
+<p>这给前面的分析补上了一个时间维度：为旧模型设计的拆分步骤、提示和约束，可能曾经必要，却未必始终合适。框架的改进因此不只是增加机制，也包括在模型升级后重新检验既有设计，保留仍有帮助的部分，调整或移除已经多余的限制。简化本身不是目标，关键是让模型能力的提升真正转化为任务效果的改善。</p>
+<p class="lead-statement"><strong>公开机制可以解释技术思路，但不能替代对完整实现与实际效果的验证。</strong></p>
+<p>本文引用的官方文章、API 文档和创始人访谈笔记，能够支持对各自披露范围内的产品行为与技术做法的分析，但不能直接拼成当前版本的完整内部架构。规划何时调整、上下文如何筛选、恢复时如何决定重做哪些步骤，以及这些机制如何协同，所引用材料仍未给出完整答案。已有证据让我们能够讨论设计的价值与取舍；要进一步判断实际效果是否领先，还需要可比较的任务测试与运行数据。</p>
+<h2 id="参考资料">参考资料</h2>
+<h3 id="manus-官方技术与产品资料">Manus 官方技术与产品资料</h3>
+<ul class="reference-list">
+<li><a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">Context Engineering for AI Agents</a>：早期技术路线选择、Agent Loop、缓存、上下文外置、目标重述与执行反馈。</li>
+<li><a href="https://manus.im/blog/manus-projects" target="_blank" rel="noopener">Introducing Manus Projects</a>：项目上下文继承与配置更新规则。</li>
+<li><a href="https://manus.im/blog/manus-branch" target="_blank" rel="noopener">Introducing Branch</a>（2026-07-09）：分支点之前的指令、文件与对话历史继承，以及后续上下文隔离。</li>
+<li><a href="https://manus.im/blog/manus-projects-self-updating" target="_blank" rel="noopener">Projects That Learn From Every Task</a>：项目指令、文件与 Skills 的更新建议及用户批准。</li>
+<li><a href="https://manus.im/blog/manus-skills" target="_blank" rel="noopener">Agent Skills</a>：Skills 分层加载及其与 MCP 的关系。</li>
+<li><a href="https://manus.im/blog/manus-sandbox" target="_blank" rel="noopener">Understanding Manus Sandbox</a>：沙箱能力、生命周期与文件恢复范围。</li>
+<li><a href="https://manus.im/blog/manus-cloud-computer" target="_blank" rel="noopener">Cloud Computer</a>：持久化云端执行环境。</li>
+<li><a href="https://manus.im/blog/deep-dive-browser-operator-connector" target="_blank" rel="noopener">Browser Operator</a>：本地浏览器操作与授权。</li>
+<li><a href="https://manus.im/blog/manus-my-computer-desktop" target="_blank" rel="noopener">Introducing My Computer</a>（2026-03-16）：本地 CLI 执行、文件与工具访问，以及命令授权和运行要求。</li>
+<li><a href="https://manus.im/blog/manus-wide-research-solve-context-problem" target="_blank" rel="noopener">Wide Research</a>：通用实例的并行执行、主控汇总与适用范围。</li>
+<li><a href="https://manus.im/blog/manus-plan-mode" target="_blank" rel="noopener">Introducing Plan Mode</a>：计划审阅、用户确认与任务中途的规划调整。</li>
+<li><a href="https://manus.im/blog/manus-schedules" target="_blank" rel="noopener">Introducing Scheduled Tasks 2.0</a>（2026-05-18）：周期执行、原任务继续或独立任务运行，以及 Project 配置复用。</li>
+</ul>
+<h3 id="manus-api-文档">Manus API 文档</h3>
+<ul class="reference-list">
+<li><a href="https://open.manus.ai/docs/v2/agents-overview" target="_blank" rel="noopener">Agents API</a>：Agent、持久主对话线程与子任务。</li>
+<li><a href="https://open.manus.ai/docs/v2/task-lifecycle" target="_blank" rel="noopener">Task Lifecycle</a>：任务状态、等待事件与用户响应。</li>
+<li><a href="https://open.manus.ai/docs/v2/task.sendMessage" target="_blank" rel="noopener">task.sendMessage</a>：向已有任务发送消息与附加文件。</li>
+<li><a href="https://open.manus.ai/docs/v2/task.listMessages" target="_blank" rel="noopener">task.listMessages</a>：任务事件、计划快照与步骤状态。</li>
+</ul>
+<h3 id="创始人访谈笔记与补充参考">创始人访谈笔记与补充参考</h3>
+<ul class="reference-list">
+<li>Lance Martin，<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">Context Engineering in Manus</a>：创始人访谈笔记，涉及上下文压缩、工具分层、Agent 职责分工、信息交接，以及框架对模型进步的适应。</li>
+<li>Anthropic，<a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">Effective Context Engineering for AI Agents</a>：用于对照按需检索等设计思路，不作为 Manus 已采用相应方案的证据。</li>
+</ul>
+</article></main>
+  </div>
+  <button class="backtop" aria-label="返回顶部">↑</button>
+  <script src="../article.js" defer></script>
+</body>
+</html>
