@@ -56,15 +56,13 @@ h2+h3{margin-top:28px}h2::before{display:none}.insight-list>li{display:flex;alig
 <p>Manus 的基本运行方式仍是通用的 Agent Loop：模型根据当前信息选择动作，工具或执行环境返回结果，再进入下一轮决策。<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章</a> 它公开的技术重点，是如何让这个循环在任务变长、信息增多之后，仍能持续有效地运行。</p>
 <p>围绕这一目标，上下文管理负责组织每一步需要的信息，规划维持任务方向，工具约束控制当前可选的操作。缓存复用、历史压缩、目标重述和失败记录保留，分别处理重复计算、信息积累与后续决策的问题。<a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">官方技术文章</a>、<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">创始人访谈笔记</a></p>
 <p>任务状态与执行环境则支撑具体操作，以及任务的等待与继续。<a href="https://open.manus.ai/docs/v2/task-lifecycle" target="_blank" rel="noopener">Task Lifecycle</a>、<a href="https://manus.im/blog/manus-sandbox" target="_blank" rel="noopener">Understanding Manus Sandbox</a></p>
-<p class="lead-statement"><strong>这些机制的关键，是在决策质量与运行成本之间取得平衡。</strong></p>
-<p>压缩可以减少输入，却可能丢失必要信息、影响缓存复用；保留更多历史有助于追溯，也会增加处理负担。最终仍要看这些选择能否改善完整任务的交付质量、耗时和成本，而不能仅凭采用了哪些机制判断效果。</p>
+<p>这些机制的关键，是在决策质量与运行成本之间取得平衡。压缩可以减少输入，却可能丢失必要信息、影响缓存复用；保留更多历史有助于追溯，也会增加处理负担。最终仍要看这些选择能否改善完整任务的交付质量、耗时和成本，而不能仅凭采用了哪些机制判断效果。</p>
 <ol start="2">
 <li><strong>按工作职责组织 Agent 分工，通过通用实例并行处理独立任务。</strong></li>
 </ol>
 <p>Manus 的公开资料介绍了两类协作设计：创始人访谈描述了规划、执行与知识管理的职责分工；Wide Research 则由主控拆分任务，交给多个通用 Manus 实例，在各自的上下文与执行环境中并行处理，再集中汇总结果。<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">创始人访谈笔记</a>、<a href="https://manus.im/blog/manus-wide-research-solve-context-problem" target="_blank" rel="noopener">Wide Research</a></p>
 <p>这体现出一种围绕任务组织通用能力的取向：执行者可以根据需要搜索、编程和整理结果，不必仅因操作类型变化就切换专家。相比“Router + 预设专家”便于针对稳定场景做专门优化，通用执行者为开放任务保留了更多自主空间，也更依赖自身的任务理解、工具选择和错误处理能力。</p>
-<p class="lead-statement"><strong>分工与并行减少了单个 Agent 的信息负担，也增加了任务交接与结果整合的工作。</strong></p>
-<p>子任务是否能独立完成、背景是否交代充分、返回结果是否支持后续判断，都会影响整体收益。上述职责分工与 Wide Research 在当前系统中如何组合，引用材料尚未说明；这些设计也不足以证明 Manus 的所有场景都不存在专门化 Agent。</p>
+<p>分工与并行减少了单个 Agent 的信息负担，也增加了任务交接与结果整合的工作。子任务是否能独立完成、背景是否交代充分、返回结果是否支持后续判断，都会影响整体收益。上述职责分工与 Wide Research 在当前系统中如何组合，引用材料尚未说明；这些设计也不足以证明 Manus 的所有场景都不存在专门化 Agent。</p>
 <h2 id="目录">目录</h2>
 <ul>
 <li><a href="#1-%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AE%A1%E7%90%86">1. 上下文管理</a></li>
@@ -163,16 +161,7 @@ h2+h3{margin-top:28px}h2::before{display:none}.insight-list>li{display:flex;alig
 <p class="lead-statement"><strong>先提出更新，经用户批准再写回项目。</strong></p>
 <p>2026 年 5 月，Manus 官方介绍，系统可以从对话中提出对<strong>项目指令、文件和 Skills</strong> 的更新建议，经用户批准后应用。<a href="https://manus.im/blog/manus-projects-self-updating" target="_blank" rel="noopener">Projects That Learn From Every Task</a></p>
 <p>把这一流程放回周报场景，可以这样理解：</p>
-<pre><code class="language-text">本次报告经过讨论和修改
-          ↓
-识别值得沿用的要求与方法
-          ↓
-提出项目更新建议，交由用户审阅
-          ↓
-批准后修改指令、文件或 Skills
-          ↓
-后续任务从更新后的项目配置开始
-</code></pre>
+<figure class="flow-diagram" aria-label="执行流程"><ol class="flow-steps"><li class="flow-node">本次报告经过讨论和修改</li><li class="flow-node">识别值得沿用的要求与方法</li><li class="flow-node">提出项目更新建议，交由用户审阅</li><li class="flow-node">批准后修改指令、文件或 Skills</li><li class="flow-node">后续任务从更新后的项目配置开始</li></ol></figure>
 <p>从效果上看，这相当于把一次任务中的经验整理成后续任务可用的规则和资料。官方披露的“学习”通过更新项目配置实现，并不意味着模型参数发生了变化。</p>
 <p class="lead-statement"><strong>临时要求不应直接变成长期规则。</strong></p>
 <p>例如，用户这次说“报告短一点”，可能只是为了快速浏览。如果系统把它记成“所有报告都要简短”，下次需要深入分析时，就可能省略必要的技术细节。写入项目配置之前，需要判断这项要求只适用于本次任务，还是以后也应遵循。</p>
@@ -185,14 +174,7 @@ h2+h3{margin-top:28px}h2::before{display:none}.insight-list>li{display:flex;alig
 <p class="lead-statement"><strong>基础工具提供入口，沙箱程序承载具体能力。</strong></p>
 <p>2025 年 10 月的创始人访谈笔记将其称为<strong>分层动作空间</strong>（Layered Action Space）：当时模型直接使用少量原子函数，包含 Bash、文件管理和代码执行；更多程序在沙箱中运行，MCP 工具也可通过命令行使用。<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">Context Engineering in Manus：Tool Definitions</a></p>
 <p>下面用简化示意说明这种分层，而非还原 Manus 的真实函数名称和全部调用路径：</p>
-<pre><code class="language-text">模型选择基础工具
-        ↓
-Bash / 文件操作 / 代码执行
-        ↓
-沙箱程序、脚本或 MCP 命令行接口
-        ↓
-结果返回模型，或写入文件供后续读取
-</code></pre>
+<figure class="flow-diagram" aria-label="执行流程"><ol class="flow-steps"><li class="flow-node">模型选择基础工具</li><li class="flow-node">Bash / 文件操作 / 代码执行</li><li class="flow-node">沙箱程序、脚本或 MCP 命令行接口</li><li class="flow-node">结果返回模型，或写入文件供后续读取</li></ol></figure>
 <p>以表格分析为例：模型调用 Bash 执行 Python 脚本，由脚本使用数据分析和绘图库完成统计、排序与画图，不必为这三项操作分别定义模型工具。这里的分层指调用入口与程序能力的关系，而不是调用步骤的多少。</p>
 <p>脚本还提供了减少模型往返的机会：流程明确且无需模型逐步判断时，统计、排序和画图可以在一次执行中完成，中间数据留在程序中，只将必要结果返回模型。这可能减少调用轮次和上下文负担，但属于程序化执行的潜在收益，不是上述访谈已经验证的性能结论。</p>
 <p class="lead-statement"><strong>工具分层减少了接口负担，也把更多工作交给了模型。</strong></p>
@@ -224,7 +206,7 @@ Bash / 文件操作 / 代码执行
 <h3 id="34-云端与本地执行环境">3.4 云端与本地执行环境</h3>
 <p class="lead-statement"><strong>执行环境决定工具能访问什么，以及文件和程序能保留多久。</strong></p>
 <p>有的任务只需要一次性的隔离环境，有的任务需要跨任务保留软件和数据；有的操作依赖用户浏览器中的登录状态，还有的工作必须访问本机文件和命令。Manus 公开资料中的几类环境对应了这些不同需求。</p>
-<div class="table-wrap"><table>
+<div class="table-wrap" role="region" aria-label="对比表格，可横向滚动" tabindex="0"><table class="comparison-table columns-4"><colgroup><col style="width:21%"><col style="width:18%"><col style="width:22%"><col style="width:39%"></colgroup>
 <thead>
 <tr>
 <th>执行方式</th>
@@ -271,7 +253,7 @@ Bash / 文件操作 / 代码执行
 <p>如果所有工作都放在同一条执行历史里，规划下一步时也会携带大量局部操作细节。拆出子 Agent 的价值，是让这些细节先在各自的任务中处理，再把影响整体安排的结果交回来。这里划分的是工作范围和信息范围，而不只是给同一个模型换几个角色名称。</p>
 <p class="lead-statement"><strong>按规划、执行与知识整理分工，而不是为每种技能设置一个专家。</strong></p>
 <p>2025 年 10 月 15 日，Lance Martin 整理的创始人访谈笔记介绍了三类职责，并将子 Agent 的主要目的概括为“isolate context”，即隔离上下文。<a href="https://rlancemartin.github.io/2025/10/15/manus/" target="_blank" rel="noopener">Context Engineering in Manus：Context Isolation</a></p>
-<div class="table-wrap"><table>
+<div class="table-wrap" role="region" aria-label="对比表格，可横向滚动" tabindex="0"><table class="comparison-table columns-2"><colgroup><col style="width:31%"><col style="width:69%"></colgroup>
 <thead>
 <tr>
 <th>角色</th>
@@ -302,15 +284,7 @@ Bash / 文件操作 / 代码执行
 <p>这与上一节的职责划分侧重点不同：规划与执行分工区分“谁安排、谁完成”，Wide Research 则把大量可独立完成的工作分发出去，同时推进。</p>
 <p class="lead-statement"><strong>主控分发任务，通用实例并行执行，再集中汇总。</strong></p>
 <p>2025 年 10 月 29 日，官方《Wide Research: Beyond the Context Window》描述了集中协调的并行机制：Main Controller 拆分任务，每个子任务由完整的 Manus 实例执行；各实例拥有独立上下文、虚拟机和工具能力。子 Agent 之间不直接通信，结果交给主控，再由主控汇总。<a href="https://manus.im/blog/manus-wide-research-solve-context-problem" target="_blank" rel="noopener">Wide Research：The Wide Research Architecture</a></p>
-<pre><code class="language-text">主控：确定要求，拆分调查任务
-├─ Manus 实例 A：调查公司 A
-├─ Manus 实例 B：调查公司 B
-└─ Manus 实例 C：调查公司 C
-   各自使用独立上下文与执行环境
-   子 Agent 之间不直接交换消息
-                ↓
-          主控比较与汇总
-</code></pre>
+<figure class="flow-diagram flow-parallel" aria-label="并行执行流程"><div class="flow-node flow-controller">主控：确定要求，拆分调查任务</div><div class="flow-branches"><div class="flow-node">Manus 实例 A：调查公司 A</div><div class="flow-node">Manus 实例 B：调查公司 B</div><div class="flow-node">Manus 实例 C：调查公司 C</div></div><div class="flow-notes"><p>各自使用独立上下文与执行环境</p><p>子 Agent 之间不直接交换消息</p></div><div class="flow-node flow-result">主控比较与汇总</div></figure>
 <p>这里的独立上下文，不是让子 Agent 在没有任务说明的情况下工作，而是不必让它继承其他对象不断累积的调查历史。各实例仍然需要知道负责哪个对象、调查什么，以及最后交回什么；这些要求是否清楚，会直接影响结果能否放在一起比较。</p>
 <p class="lead-statement"><strong>Wide Research 的关键，是找出可以独立推进的工作。</strong></p>
 <p>分别收集几家公司的公开资料，可以同时进行；根据所有公司的结果形成排名，则需要等待调查完成。如果某项工作依赖前一步尚未得出的结论，提前分发只会迫使执行者自行假设，后面还得重新对齐。官方也明确将高度顺序依赖的任务列为不适合 Wide Research 的情形。<a href="https://manus.im/blog/manus-wide-research-solve-context-problem" target="_blank" rel="noopener">Wide Research：When not to use</a></p>
@@ -327,7 +301,7 @@ Bash / 文件操作 / 代码执行
 </ul>
 <p class="lead-statement"><strong>简单任务传递指令，复杂任务可以共享完整上下文。</strong></p>
 <p>访谈给出了两种方式的定性适用情形，但没有展开具体判定规则，也未说明选择由模型还是程序完成。<a href="https://rlancemartin.github.io/2025/10/15/manus/#context-isolation" target="_blank" rel="noopener">创始人访谈笔记：Context Isolation</a> 从信息交接的角度看，它们各有好处和代价：</p>
-<div class="table-wrap"><table>
+<div class="table-wrap" role="region" aria-label="对比表格，可横向滚动" tabindex="0"><table class="comparison-table columns-3"><colgroup><col style="width:32%"><col style="width:34%"><col style="width:34%"></colgroup>
 <thead>
 <tr>
 <th>方式</th>
@@ -370,7 +344,7 @@ Bash / 文件操作 / 代码执行
 <p>长程任务不一定能完全自主完成。遇到需要用户补充的信息，或尚未获准的外部操作时，系统需要保留当前任务状态，等待用户响应后再继续，而不是让 Agent 自行猜测或反复尝试。</p>
 <p class="lead-statement"><strong>用任务状态区分运行、等待与结束。</strong></p>
 <p>Task Lifecycle 文档说明，任务创建后异步执行，通过状态事件区分 <code>running</code>（运行中）、<code>waiting</code>（等待输入或确认）、<code>stopped</code>（该文档中表示任务完成）和 <code>error</code>（任务失败）。任务进入等待状态后，接入程序需要区分：如果 Agent 在向用户提问，就通过消息接口补充答案；如果在等待某项操作的批准，就通过动作确认接口提交用户的决定。<a href="https://open.manus.ai/docs/v2/task-lifecycle" target="_blank" rel="noopener">Task Lifecycle：Task status / Handling waiting status</a></p>
-<div class="table-wrap"><table>
+<div class="table-wrap" role="region" aria-label="对比表格，可横向滚动" tabindex="0"><table class="comparison-table columns-3"><colgroup><col style="width:32%"><col style="width:34%"><col style="width:34%"></colgroup>
 <thead>
 <tr>
 <th>等待原因</th>
