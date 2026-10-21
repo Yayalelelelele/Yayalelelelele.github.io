@@ -93,6 +93,8 @@
     <p class="meta">实测案例：淘宝粘毛器退款　｜　调研日期：2026-10-15</p>
   </header>
 
+  <nav class="toc"><strong>目录</strong><ol><li><a href="#chapter-1">退款案例</a><ol><li><a href="#case-overview">对话截图</a></li><li><a href="#case-trajectory">执行轨迹</a></li></ol></li><li><a href="#chapter-2">长程任务状态管理</a><ol><li><a href="#section-2-1">任务管理机制</a></li><li><a href="#section-2-2">中断与恢复</a></li><li><a href="#section-2-3">进展反馈与主动通知</a></li></ol></li><li><a href="#chapter-3">上下文构建与选择</a><ol><li><a href="#section-3-1">System Prompt 结构</a></li><li><a href="#section-3-2">运行时消息（Developer）</a></li><li><a href="#section-3-3">文件系统与上下文加载</a></li></ol></li><li><a href="#chapter-4">上下文压缩与卸载</a></li><li><a href="#chapter-5">子 Agent 的上下文与协作</a></li><li><a href="#appendix-a">附录 A：System Prompt</a></li><li><a href="#appendix-b">附录 B：文件目录与用途</a></li><li><a href="#appendix-c">附录 C：JSONL 运行轨迹</a></li><li><a href="#appendix-d">附录 D：任务工具 Schema</a></li></ol></nav>
+
   <section class="case-preview" id="chapter-1" aria-labelledby="chapter-1-title">
     <h2 id="chapter-1-title">1. 退款案例</h2>
     <h3 id="case-overview">1.1 对话截图</h3>
@@ -148,7 +150,7 @@
 
 
   </section>
-<nav class="toc"><strong>目录</strong><ol><li><a href="#chapter-1">退款案例</a><ol><li><a href="#case-overview">对话截图</a></li><li><a href="#case-trajectory">执行轨迹</a></li></ol></li><li><a href="#chapter-2">长程任务状态管理</a><ol><li><a href="#section-2-1">任务管理机制</a></li><li><a href="#section-2-2">中断与恢复</a></li><li><a href="#section-2-3">进展反馈与主动通知</a></li></ol></li><li><a href="#chapter-3">上下文构建与选择</a><ol><li><a href="#section-3-1">System Prompt 结构</a></li><li><a href="#section-3-2">运行时消息（Developer）</a></li><li><a href="#section-3-3">文件系统与上下文加载</a></li></ol></li><li><a href="#chapter-4">上下文压缩与卸载</a></li><li><a href="#chapter-5">子 Agent 的上下文与协作</a></li><li><a href="#appendix-a">附录 A：System Prompt</a></li><li><a href="#appendix-b">附录 B：文件目录与用途</a></li><li><a href="#appendix-c">附录 C：JSONL 运行轨迹</a></li><li><a href="#appendix-d">附录 D：任务工具 Schema</a></li></ol></nav>
+
 <section id="chapter-2"><h2>2. 长程任务状态管理</h2>
     <h3 id="section-2-1">2.1 任务管理机制</h3>
     <p>用户要求 Muse“处理到退款”后，主 Agent 创建 Goal，保存持续跟进的目标。需要操作淘宝时，它创建或续接 Browser Task；浏览器任务异步执行，完成后由 Runtime 通过 Developer Handoff 交回结果。主 Agent 根据结果向 Timeline 追加重要进展，等待客服回复时创建 Cron，保存下次检查安排；退款完成后清理 Cron 并关闭 Goal。本案例观察到了这些任务记录和异步交接，但没有观察到 Cron 到期自动唤醒。</p>
