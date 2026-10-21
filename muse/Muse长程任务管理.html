@@ -340,8 +340,8 @@ Goal slug: goal
     <h3 id="section-2-3">2.3 进展反馈与主动通知</h3>
     <p>两条路径都由 Runtime 向主 Agent 投递 Developer 消息，但触发来源和后续处理不同。</p>
     <h4>异步反馈：Browser Task Handoff</h4>
-    <p>主 Agent 用 <code>browser.spawn_task</code> 下发网页任务，工具立即返回“已受理”和 Browser Task ID。Browser Agent 在独立 Session 中操作网页，完成当前阶段后调用 <code>browser_hand_off</code> 提交结果；主 Agent 此时无需轮询，可以先向用户说明任务已开始。</p>
-    <p>Runtime 收到阶段结果后，将任务状态、Browser Agent 的报告和回复要求封装成 <code>Browser Task Handoff</code>，以 <code>developer</code> 消息写入主 Session，并唤醒主 Agent。主 Agent 再根据结果决定是否续接或重试、更新 Timeline，或者向用户汇报。首次订单查询中，工具在 seq 167 只返回“已受理”；真正的查询结果直到 seq 170 才通过 Handoff 到达。</p>
+    <p>主 Agent 调用 <code>browser.spawn_task</code>，收到“已受理”和任务 ID 后即可先回复用户，无需轮询。Browser Agent 在独立 Session 中执行，完成当前阶段后用 <code>browser_hand_off</code> 提交结果。</p>
+    <p>Runtime 将结果封装为 <code>Browser Task Handoff</code>，以 <code>developer</code> 消息写入主 Session，唤醒主 Agent 继续处理、记录进展或向用户汇报。</p>
     <p class="example-label">退款任务：浏览器结果触发汇报</p>
 <pre><code>seq 166  主 Agent：browser.spawn_task，发起订单与客服查询
 seq 167  工具回执：已受理，浏览器任务继续执行
@@ -352,8 +352,8 @@ seq 172  主 Agent：向用户汇报订单、物流和客服情况
 seq 324  Runtime：Browser Task Handoff，交回退款结果
 seq 334  主 Agent：核实并汇报 ¥11.38 退款完成</code></pre>
     <h4>主动提醒：PROACTIVITY HANDOFF</h4>
-    <p>Muse 通过后台任务准备提醒候选，再由主 Agent 决定是否向用户发送。本次样本中，<code>proactive_notifier</code> 按计划在主 Session 之外运行；Runtime 将其准备的候选和说明作为 Developer 消息 <code>PROACTIVITY HANDOFF</code> 写入主 Session，唤醒主 Agent。Runtime 负责交接事件，主 Agent 没有调用工具来启动这次后台运行。</p>
-    <p>收到 Handoff 后，主 Agent 调用 <code>proactivity.read</code> 查看候选与关注历史，调用 <code>chat.read_messages</code> 核对用户最近说过什么。本次它用 <code>proactivity.select</code> 选中预售鞋提醒，随后发出聊天消息。Handoff 也允许主 Agent 在没有合适内容时调用 <code>muse.nothing_to_do</code>，不向用户发消息。</p>
+    <p>后台任务 <code>proactive_notifier</code> 按计划准备提醒候选，Runtime 通过 <code>developer</code> 消息 <code>PROACTIVITY HANDOFF</code> 将其交给主 Agent，并唤醒它决定是否发送。</p>
+    <p>主 Agent 用 <code>proactivity.read</code> 查看候选，用 <code>chat.read_messages</code> 核对近期对话，再通过 <code>proactivity.select</code> 选择提醒并发送；没有合适内容时，可调用 <code>muse.nothing_to_do</code> 跳过通知。</p>
     <p class="example-label">预售鞋：候选选择后主动发消息</p>
 <pre><code>后台任务  proactive_notifier：计划 09:08:20，实际 09:08:25 运行
 seq 146  Runtime：PROACTIVITY HANDOFF，交来提醒候选
