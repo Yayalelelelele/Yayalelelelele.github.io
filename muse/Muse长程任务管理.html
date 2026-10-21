@@ -93,7 +93,7 @@
     <p class="meta">实测案例：淘宝粘毛器退款　｜　调研日期：2026-10-15</p>
   </header>
 
-  <nav class="toc"><strong>目录</strong><ol><li><a href="#chapter-1">退款案例</a><ol><li><a href="#case-overview">对话截图</a></li><li><a href="#case-trajectory">执行轨迹</a></li></ol></li><li><a href="#chapter-2">长程任务状态管理</a><ol><li><a href="#section-2-1">任务管理机制</a></li><li><a href="#section-2-2">中断与恢复</a></li><li><a href="#section-2-3">进展反馈与主动通知</a></li></ol></li><li><a href="#chapter-3">上下文构建与选择</a><ol><li><a href="#section-3-1">System Prompt 结构</a></li><li><a href="#section-3-2">运行时消息（Developer）</a></li><li><a href="#section-3-3">文件系统与上下文加载</a></li></ol></li><li><a href="#chapter-4">上下文压缩与卸载</a></li><li><a href="#chapter-5">子 Agent 的上下文与协作</a></li><li><a href="#appendices">附录</a><ol><li><a href="#appendix-a">A. System Prompt</a></li><li><a href="#appendix-b">B. 文件目录与用途</a></li><li><a href="#appendix-c">C. JSONL 运行轨迹</a></li><li><a href="#appendix-d">D. 任务工具 Schema</a></li></ol></li></ol></nav>
+  <nav class="toc"><strong>目录</strong><ol><li><a href="#chapter-1">退款案例</a><ol><li><a href="#case-overview">对话截图</a></li><li><a href="#case-trajectory">执行轨迹</a></li></ol></li><li><a href="#chapter-2">长程任务状态管理</a><ol><li><a href="#section-2-1">任务管理机制</a></li><li><a href="#section-2-2">中断与恢复</a></li><li><a href="#section-2-3">进展反馈与主动通知</a></li></ol></li><li><a href="#chapter-3">上下文构建与选择</a><ol><li><a href="#section-3-1">System Prompt 结构</a></li><li><a href="#section-3-2">运行时消息（Developer）</a></li><li><a href="#section-3-3">文件系统与上下文加载</a></li></ol></li><li><a href="#chapter-4">上下文压缩与卸载</a></li><li><a href="#chapter-5">子 Agent 的上下文与协作</a></li><li><a href="#appendices">附录</a><ol><li><a href="#appendix-a">A. System Prompt</a></li><li><a href="#appendix-b">B. 文件目录与用途</a></li><li><a href="#appendix-c">C. 原始轨迹</a></li></ol></li></ol></nav>
 
   <section class="case-preview" id="chapter-1" aria-labelledby="chapter-1-title">
     <h2 id="chapter-1-title">1. 退款案例</h2>
@@ -199,8 +199,6 @@ Goal slug: goal
 用户昨晚在淘宝“好货严选工厂”下单3卷粘毛器（订单尾号16414，实付¥9.38，先用后付未扣款）……跟进至退款完成。
 </code></pre>
     <p class="source">
-      <span class="source-item"><a href="#appendix-c">附录 C · 主 Agent 调用与回执（seq 185–186）</a></span>
-      <span class="source-item"><a href="#appendix-d">附录 D · <code>tracking.create</code> Schema</a></span>
       <span class="source-item">原始 GOAL.md</span>
     </p>
 
@@ -228,10 +226,7 @@ Goal slug: goal
     &quot;updated_at&quot;: &quot;2026-10-13T02:23:56Z&quot;
   }
 }</code></pre>
-    <p class="source">
-      <span class="source-item"><a href="#appendix-c">附录 C · Timeline 调用与回执（seq 259、261）</a></span>
-      <span class="source-item"><a href="#appendix-d">附录 D · <code>tracking.create_entry</code> Schema</a></span>
-    </p>
+    
 
     <h4>定时继续执行：Cron</h4>
     <p>等待客服或物流变化时，主 Agent 用 <code>cron.add</code> 创建一次性检查任务。<code>execution.kind: main_agent</code> 指定到期后由主 Agent 执行。输入设置了 <code>flexible_time: true</code>，工具回执给出的计划时间是 11:12。</p>
@@ -274,10 +269,7 @@ Goal slug: goal
   &quot;timezone&quot;: &quot;Asia/Shanghai&quot;,
   &quot;title&quot;: &quot;粘毛器：中午前最后确认客服回复&quot;
 }</code></pre>
-    <p class="source">
-      <span class="source-item"><a href="#appendix-c">附录 C · Cron 创建与回执（seq 260、262）</a></span>
-      <span class="source-item"><a href="#appendix-d">附录 D · Cron 工具 Schema</a></span>
-    </p>
+    
 
     <h4>关闭任务：Goal</h4>
     <ol>
@@ -309,10 +301,7 @@ Goal slug: goal
   &quot;updated&quot;: true
 }</code></pre>
 
-    <p class="source">
-      <span class="source-item"><a href="#appendix-c">附录 C · 任务收尾轨迹（seq 326–332）</a></span>
-      <span class="source-item"><a href="#appendix-d">附录 D · <code>tracking.set_status</code> Schema</a></span>
-    </p>
+    
 
     <h3 id="section-2-2">2.2 中断与恢复</h3>
     <p>本案例出现三种执行中断：页面故障、用户打断，以及 Browser Agent 遇到超出当前任务限制的退款确认操作。主 Agent 分别选择调整操作路径、停止任务或续接原任务。</p>
@@ -333,7 +322,6 @@ Goal slug: goal
       <p><strong>续接：</strong>Runtime 启动新的 Browser Agent Session，沿用暂停前的 305 条执行记录，再加入新指令。Browser Agent 完成退款后返回 <code>completed</code>。</p>
     </div>
     <p class="source">
-      <span class="source-item"><a href="#appendix-c">附录 C · 失败、打断与续接轨迹</a></span>
       <span class="source-item">续接前 Browser Agent Session</span>
       <span class="source-item">续接后 Browser Agent Session</span>
     </p>
@@ -363,7 +351,6 @@ seq 157  主 Agent：proactivity.select，选中提醒
 seq 160  主 Agent：主动告知用户将跟进预售鞋发货</code></pre>
     <p class="source">
       <span class="source-item">退款异步反馈：主 Agent Session JSONL · seq 166–172、324–334</span>
-      <span class="source-item">Browser Agent 的执行与回传：<a href="#appendix-c">附录 C · JSONL 运行轨迹</a></span>
       <span class="source-item">预售鞋主动提醒：主 Agent Session JSONL · seq 146–160</span>
       <span class="source-item">产品设计：<a href="https://introducing.muse.ai/">How We Designed Muse · Proactivity</a></span>
     </p>
@@ -480,7 +467,7 @@ seq 160  主 Agent：主动告知用户将跟进预售鞋发货</code></pre>
         <tr><td><strong>会话记录</strong></td><td><code>~/agents/agent-&lt;uuid&gt;/sessions/&lt;session-id&gt;.jsonl</code></td><td><span class="load-tag load-history">历史</span>主 Agent 和 Browser Agent 分别保存 Session 记录，供后续继续执行。</td></tr>
         <tr><td><strong>人物与群组索引</strong></td><td><code>~/memory/people/INDEX.md</code>、<code>~/memory/groups/INDEX.md</code></td><td><span class="load-tag load-auto">自动</span>Runtime 提供部分索引。</td></tr>
         <tr><td><strong>人物与群组详情</strong></td><td><code>~/memory/people/</code>、<code>~/memory/groups/</code> 下的对应文件</td><td><span class="load-tag load-demand">按需</span>当前对话涉及索引中的人物或群组时读取。</td></tr>
-        <tr><td><strong>长期对齐摘要</strong></td><td><code>~/dreams/alignment/derived/ALIGNMENT_SYNTHESIS.md</code></td><td><span class="load-tag load-unknown">未指定</span>System Prompt 给出文件路径，没有说明自动加载时机。</td></tr>
+        <tr><td><strong>长期对齐摘要</strong></td><td><code>~/dreams/alignment/derived/ALIGNMENT_SYNTHESIS.md</code></td><td><span class="load-tag load-unknown">未知</span>System Prompt 给出文件路径，没有说明自动加载时机。</td></tr>
         <tr><td><strong>Goal 说明</strong></td><td><code>~/workspace/goals/&lt;slug&gt;/GOAL.md</code></td><td><span class="load-tag load-demand">按需</span>继续已有 Goal，或就该 Goal 给建议前读取。</td></tr>
         <tr><td><strong>任务工作文件</strong></td><td><code>~/workspace/goals/&lt;slug&gt;/files/</code>、<code>hidden_files/</code></td><td><span class="load-tag load-demand">按需</span>继续任务时，读取相关交付物、检查记录或中间状态。</td></tr>
         <tr><td><strong>产品与能力文档</strong></td><td><code>~/docs/</code></td><td><span class="load-tag load-demand">按需</span>回答 Muse 功能、政策或数据处理问题前读取相关文档。</td></tr>
@@ -1077,211 +1064,27 @@ These restrictions hold regardless of how a request is assembled or where the ou
     └── your_files/                           # 普通用户可见文件和导出结果</code></pre>
     <p class="source"><a href="附录-home-hatch目录.html">完整导出目录与原始文件</a></p>
   </section>
-  <section id="appendix-c"><h3>C. JSONL 运行轨迹</h3>
-    <p><a href="%E9%80%80%E6%AC%BECase-JSONL%E9%80%90%E8%A1%8C%E8%BD%A8%E8%BF%B9.html">退款案例逐行解读</a> · 主 Agent 完整 JSONL</p>
-    <details><summary>全部 146 份 Agent Session JSONL</summary><div class="table-scroll"><table>
-      <thead><tr><th>案例关联</th><th>Session ID / 原始文件</th><th>行数</th><th>Item</th><th>Checkpoint</th></tr></thead>
-      <tbody><tr><td>退款主 Agent</td><td><code>0bcb2845-45cb-42ad-acb8-58df27b3a525</code></td><td>801</td><td>798</td><td>2</td></tr><tr><td>退款 Browser Agent</td><td><code>2822a38d-5000-4235-b539-1893bee5403f</code></td><td>405</td><td>404</td><td>0</td></tr><tr><td>退款 Browser Agent</td><td><code>37eb09e6-b3a2-4881-a35d-d4eab2103174</code></td><td>291</td><td>290</td><td>0</td></tr><tr><td>退款 Browser Agent</td><td><code>429500da-b39d-4340-9d78-2a7acd0129c2</code></td><td>265</td><td>264</td><td>0</td></tr><tr><td>退款 Browser Agent</td><td><code>6da14612-8173-4b47-b69f-06094d58e208</code></td><td>395</td><td>394</td><td>0</td></tr><tr><td>退款 Browser Agent</td><td><code>7054be10-c42b-4c8c-933d-2648df21e77b</code></td><td>30</td><td>29</td><td>0</td></tr><tr><td>退款 Browser Agent</td><td><code>9cff8ff9-078f-474f-8780-6c068fa512ec</code></td><td>266</td><td>265</td><td>0</td></tr><tr><td>退款 Browser Agent</td><td><code>b76f9a57-66b5-40ed-99b0-bc1470168602</code></td><td>306</td><td>305</td><td>0</td></tr><tr><td>退款 Browser Agent</td><td><code>c8bf4260-8c02-42be-b2a9-d0a8faabd995</code></td><td>99</td><td>98</td><td>0</td></tr><tr><td>退款 Browser Agent</td><td><code>cf5b7e35-4627-472f-91a5-1c7b0f550864</code></td><td>202</td><td>201</td><td>0</td></tr><tr><td>退款 Browser Agent</td><td><code>f5084f7f-a964-43e6-8707-ec279aee0c6a</code></td><td>347</td><td>346</td><td>0</td></tr><tr><td>退款 Browser Agent</td><td><code>f8803477-520f-494c-9214-c42028494890</code></td><td>99</td><td>98</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>01527e41-d8e9-4d7e-b841-3a52e6a7a77c</code></td><td>17</td><td>16</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>026cd080-8f01-49bf-8982-7a0ad0cb3674</code></td><td>15</td><td>14</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>05ce9c66-75d7-410c-a493-c085b4b44aa7</code></td><td>26</td><td>25</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>05f9e05e-74d0-49a0-a1ae-bd26db3a3cf8</code></td><td>11</td><td>10</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>096baa6c-8a99-4405-a2c6-48d43d4fcc51</code></td><td>18</td><td>17</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>0a3ccf07-3663-44eb-bad1-d3d11f64f4ed</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>0e28fe70-6cf4-43fa-8b7d-59e322bae815</code></td><td>8</td><td>7</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>0f8bf938-6624-4622-999e-bc7870751c77</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>109bb65a-7917-487e-a44a-f137fcdd380b</code></td><td>9</td><td>8</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>115171ff-f869-4b9a-8244-84bdf1f38a07</code></td><td>20</td><td>19</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>148a2e7c-9110-454c-b566-7cc225e83c28</code></td><td>20</td><td>19</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>158ad323-fc40-45dd-9aa7-7cc685bb9694</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>15f8dbbc-bd5f-4bd4-8f39-c45f6c9ccf1a</code></td><td>20</td><td>19</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>1738357f-fcf4-4ad7-b15f-6d98dc4ea014</code></td><td>11</td><td>10</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>17856cec-c7db-4543-8b8e-d9b0cef6ada1</code></td><td>10</td><td>9</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>1bfd2816-cff2-412e-b26b-c5afeec7e458</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>1d7bfa52-7f5f-4d11-bb64-97555c343983</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>1feef09e-0e57-4b11-9b8d-2a89d294d805</code></td><td>14</td><td>13</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>20ff6e9c-015b-449a-9afb-68456a484c14</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>232b2690-fcee-4c89-b17b-3a0bc11807b4</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>25a33d80-16ee-47f8-b6ba-dafce520faf2</code></td><td>14</td><td>13</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>26d5324d-45d8-4124-863f-951c83aaa51a</code></td><td>12</td><td>11</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>27b8b1d9-f536-4264-9eab-9372372b6714</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>27f849bd-c7e3-48a1-940e-999570749f80</code></td><td>27</td><td>26</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>28bae711-ed84-45aa-89b8-2c575fed27b6</code></td><td>9</td><td>8</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>29fa60af-f2b1-4f7b-ae63-f05a142876b9</code></td><td>299</td><td>298</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>2c1fa792-6096-4da1-b1fe-82c07045f45c</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>2c7e359f-cd29-4956-ac81-e2550c43bb76</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>2d0ef48f-0a1b-4a6c-9e5f-80280bc67fdb</code></td><td>57</td><td>56</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>305ee1ae-9dea-4b6f-bbec-bece87700304</code></td><td>17</td><td>16</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>30fa126e-2e9b-4505-9c02-944ce758161b</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>3340449f-e9aa-4224-b2cb-4fe316cc26e9</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>33a7fae8-ba0f-44c2-815a-8871348e78a4</code></td><td>15</td><td>14</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>362ad55d-dcec-4262-8f50-0732ec2dea0b</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>363bacec-311b-4b96-83fb-33728e490d9c</code></td><td>29</td><td>28</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>398c138f-d934-4123-97a6-e9c5a090d899</code></td><td>29</td><td>28</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>3ba191b1-3a4e-4068-9671-67b8473a97f4</code></td><td>14</td><td>13</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>3c99a6ae-6dec-4099-8507-60eba4a2292c</code></td><td>57</td><td>56</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>3e94c336-d80f-4053-89fe-5d8d275bdbbe</code></td><td>11</td><td>10</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>45bdf538-e5b8-473f-87cd-f0b0ed073e13</code></td><td>14</td><td>13</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>466d7205-8e72-4b13-a8dc-4fc1692dd007</code></td><td>20</td><td>19</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>46928cf2-28fd-48e4-8d88-039b36f5deb5</code></td><td>29</td><td>28</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>47382ad4-2f55-4d89-9c9c-6600e504e235</code></td><td>195</td><td>194</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>47d2ea37-7fd1-4428-827e-fddd28a9c018</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>48248e19-06c6-414c-a208-a4450c724c02</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>48503728-3206-4e73-8847-b3bcef75c742</code></td><td>19</td><td>18</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>4a4ab7ef-cdbd-4f3d-a2f1-7a7b23a59a46</code></td><td>21</td><td>20</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>4a4d9eb4-6f00-4f71-a68f-d69d4f721f18</code></td><td>2</td><td>1</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>4b21c49f-ad0b-4a98-b3e9-f13e59be9689</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>4cda04b4-cf86-43dc-b547-c1bf2154a8cb</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>4d1e3646-178c-4c94-bd57-f0322aabb550</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>4f1d987a-8839-456d-9daf-f9cf8645625b</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>50e1099c-201f-4056-87de-8aa0f38a1645</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>5253dab5-11c9-445f-a4fd-a7295904a81b</code></td><td>20</td><td>19</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>5824cc02-a4c5-40b5-9b72-88edd7e53960</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>5b1fd079-7b4c-45ad-a857-401754b2c8eb</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>5badb05d-0d29-4ffa-aadf-fb16b546de04</code></td><td>11</td><td>10</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>65c60642-fe99-431b-b520-a4e77f7de455</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>66ebfe73-e64d-454d-9fe1-a543821da5c7</code></td><td>25</td><td>24</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>67b2e426-280e-44c2-981a-4928d3fd6a81</code></td><td>8</td><td>7</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>67d3fd83-ba46-468e-b76b-e4305c726b65</code></td><td>19</td><td>18</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>69645697-dd51-47df-a46b-bcf9be69963f</code></td><td>15</td><td>14</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>6bf72457-df53-4bd7-b484-c4fcc02dc018</code></td><td>15</td><td>14</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>6e607261-e896-43d4-87ab-cad67944b8f6</code></td><td>12</td><td>11</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>6fab32e2-1951-491b-b0d0-7082acb80529</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>712b9de4-dcf6-4495-86e5-89524649900d</code></td><td>14</td><td>13</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>71a74959-c80f-424f-91d7-08b6832065db</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>77844c4c-1b9a-4a46-bb1f-77c0a741623e</code></td><td>38</td><td>37</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>7a010392-d5f7-466d-afb0-aac52d3ccfae</code></td><td>565</td><td>564</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>7b98e7c2-3b42-4e74-aa9d-67d5e687fae8</code></td><td>14</td><td>13</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>7f27bd22-5f75-4aaf-b43a-b0a6ad9925d5</code></td><td>8</td><td>7</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>80e3a42f-d16b-4d5a-a8b0-2144ad14a2b2</code></td><td>12</td><td>11</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>814ecef6-6287-416f-864d-49adda098a99</code></td><td>19</td><td>18</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>82d3c12f-9497-43a5-9070-7c2bd6f5e479</code></td><td>32</td><td>31</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>86370c90-e759-4eb4-aef2-a706e660bdec</code></td><td>13</td><td>12</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>87d2f81d-5542-4be8-a5f0-4bbd8a66de72</code></td><td>8</td><td>7</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>8985c517-eb95-4e57-abef-4fd5f7189115</code></td><td>30</td><td>29</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>8aa5a979-e834-433e-b358-26d925194918</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>8b421a0f-8b8a-4907-8564-1f80732e935c</code></td><td>9</td><td>8</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>8b940339-ecdd-40a4-8355-2ff37dfe6b2c</code></td><td>9</td><td>8</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>91891d9e-cf69-4535-b070-f7fd5ff78bf7</code></td><td>26</td><td>25</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>93a6eebe-108a-4faa-9ea0-556799b982a7</code></td><td>8</td><td>7</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>9422b239-1324-4acc-be8a-3169a33a9e55</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>9af0b17a-f5fd-4317-81ef-7be93cf6b1ba</code></td><td>16</td><td>15</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>9b643fff-c330-4d4a-a6f8-e85c13e5da24</code></td><td>18</td><td>17</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>9f460aa7-bd07-4a81-90a2-d57dd4c88aa2</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>9fecb087-51d1-4eb1-a6cd-f0c741f6fd8d</code></td><td>11</td><td>10</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>a053b4c0-319b-4cf0-96e5-cacc0363ffff</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>a0cfc04b-4a6d-422b-a6bc-436b1d3d828c</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>a4a91038-4e59-4fb4-ae55-3b885808482a</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>aecbe7f0-972e-4add-a14b-6dcb949b9837</code></td><td>11</td><td>10</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>b293ea66-5a3a-434e-b537-26327b137153</code></td><td>14</td><td>13</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>b52f5ba5-f149-413d-a8e8-a068e3a24aa6</code></td><td>9</td><td>8</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>bc53ec98-0a06-4502-870b-0330e3375f5b</code></td><td>11</td><td>10</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>bc5b79a3-7353-4d0f-b38e-f979398b3b0b</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>be1b7e6d-651c-4a23-9400-cfa5e6d2bf0b</code></td><td>9</td><td>8</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>c004fd60-de38-45c3-9cca-49cd0b0be3f6</code></td><td>54</td><td>53</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>c5814b20-d392-48d4-bb39-ff1ad97ab324</code></td><td>10</td><td>9</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>c61f0662-e651-434a-805e-4a0842f11561</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>c761e914-772a-4ab7-8fdd-4212db16bf1c</code></td><td>12</td><td>11</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>c7e2b578-8d67-45c7-a51d-ce8181ff0f1f</code></td><td>65</td><td>64</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>cbdde04a-fe98-4863-a556-c13c1fc7c91a</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>cc3d6f7b-23d7-45cb-85ad-b98bf832497c</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>cfba411b-a1ad-43e4-8e98-49537d6752b5</code></td><td>14</td><td>13</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>d0bccda6-10b3-4d1f-821c-f1ec48c47926</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>d1914e38-681d-44ee-82bf-2767062d7bec</code></td><td>9</td><td>8</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>d1b25802-443f-4d8a-bd3e-efc2e7a70bee</code></td><td>9</td><td>8</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>d1decfe9-e52a-45a6-99fc-2b759cad7109</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>d8b7ce3b-9ebf-4e1b-9705-ac16844b63bd</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>d99d90f2-6575-4bb5-b501-f495a2879c6e</code></td><td>30</td><td>29</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>d9e39e1d-339e-4ffd-b791-6eab09fa9a50</code></td><td>8</td><td>7</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>dc4b20d4-d030-4696-b0ff-1a26cea7090f</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>dc92ad3c-5193-4aef-ab45-9d7885deab01</code></td><td>324</td><td>323</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>dd0f40e2-8773-4bb2-bbca-6e1c2b2130ae</code></td><td>17</td><td>16</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>de200a10-5c14-4da1-a355-301ee98168ac</code></td><td>9</td><td>8</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>de3e8a26-b37c-4234-8bdc-1db6e0678c55</code></td><td>8</td><td>7</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>dede5ddc-ccc1-41ad-9d43-a7bcfff10e34</code></td><td>53</td><td>52</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>e251af4a-d45d-4d7d-9185-61c04a984843</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>e5af817d-fe8b-49d0-8517-65a0043d44ea</code></td><td>6</td><td>5</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>ea3e6163-521e-4cd1-ae41-753eec622f83</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>ea523b22-254b-470d-ab0e-743220890017</code></td><td>19</td><td>18</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>ebb7d7d2-a29b-4ffe-95fe-3b5b70e1f371</code></td><td>20</td><td>19</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>ec9f6222-1886-4606-a298-f8cb85d1e8be</code></td><td>13</td><td>12</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>edba5285-5d10-4fa5-9de1-ff9fa8dcdaf0</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>ede438b0-425f-4dca-be9d-26183b938fed</code></td><td>22</td><td>21</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>f01a68e6-46e3-4dbd-8ab3-26992ac5be2e</code></td><td>28</td><td>27</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>f1a3eb68-6685-4a49-bd9f-5e06e94aef2a</code></td><td>9</td><td>8</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>f31e5aff-6c28-4b1f-8944-8306c736593f</code></td><td>9</td><td>8</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>f553a0d8-f0cb-4a9d-9c95-5d7b6026136d</code></td><td>9</td><td>8</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>faf62bbe-271c-4434-89fc-8096b63b82ac</code></td><td>13</td><td>12</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>fb419029-d135-4ae0-9d25-64a66fe2b263</code></td><td>13</td><td>12</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>fbc1763b-638d-4247-9e4a-0bfeaba88104</code></td><td>5</td><td>4</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>fc9947bb-00d3-4bbc-883a-9836130ceb52</code></td><td>11</td><td>10</td><td>0</td></tr><tr><td>其他 Agent</td><td><code>ffe891ed-7f15-4ae2-91f5-3543ebadf845</code></td><td>34</td><td>33</td><td>0</td></tr></tbody></table></div></details>
-  </section>
-
-  <section id="appendix-d"><h3>D. 任务工具 Schema</h3>
-    <p>以下保留正文涉及的工具输入 Schema。实际调用与回执见各小节及原始轨迹。</p>
-    <h3>Goal：<code>tracking.create</code></h3>
-<h4>输入 Schema</h4>
-<pre><code>{
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["title", "current_state", "description"],
-  "properties": {
-    "title": {
-      "type": "string",
-      "description": "任务名称"
-    },
-    "current_state": {
-      "type": "string",
-      "description": "当前最有用的一行状态"
-    },
-    "description": {
-      "type": "string",
-      "description": "两到三句任务说明"
-    },
-    "emoji": {
-      "type": "string",
-      "description": "可选的单个 Goal 界面图标；省略时使用默认图标"
-    },
-    "goal_kind": {
-      "type": "string",
-      "enum": ["outcome", "behavior", "learning", "habit",
-               "maintenance", "recovery", "identity", "exploratory"]
-    },
-    "parent_goal_id": {
-      "type": "string",
-      "description": "可选的父级 tracked item ID"
-    },
-    "value_alignment": {
-      "type": "string",
-      "description": "该任务对用户的意义"
-    }
-  }
-}</code></pre>
-<p><code>goal_kind</code> 是可选的目标类型：outcome（结果）、behavior（行为）、learning（学习）、habit（习惯）、maintenance（维持）、recovery（恢复）、identity（身份认同）、exploratory（探索）。本案例选 <code>outcome</code>。</p>
 
 
 
-    <h3>Timeline：<code>tracking.create_entry</code></h3>
-<h4>输入 Schema</h4>
-<pre><code>{
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["goal_id", "title", "current_state", "description"],
-  "properties": {
-    "goal_id": {
-      "type": "string",
-      "description": "关联的 tracked item ID"
-    },
-    "title": {
-      "type": "string",
-      "description": "本次活动标题"
-    },
-    "current_state": {
-      "type": "string",
-      "description": "本次活动产生的一行状态"
-    },
-    "description": {
-      "type": "string",
-      "description": "发生了什么以及结果"
-    },
-    "effective_at": {
-      "type": "string",
-      "description": "实际发生时间；RFC 3339 或 YYYY-MM-DD"
-    }
-  }
-}</code></pre>
-
-    <h3>Cron：创建、改期与删除</h3>
-<h4>cron.add 输入 Schema</h4>
-<pre><code>
-{
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["id", "predicted_connector_permissions",
-               "enabled", "mode", "schedule"],
-  "properties": {
-    "id": {
-      "type": "string",
-      "description": "稳定的调度任务 ID"
-    },
-    "title": {
-      "type": "string",
-      "maxLength": 120,
-      "description": "展示名称"
-    },
-    "owner": {
-      "type": "string",
-      "description": "生命周期归属；本案例为 goal:&lt;goal-slug&gt;"
-    },
-    "enabled": {
-      "type": "boolean",
-      "description": "是否允许 Scheduler 排队执行"
-    },
-    "mode": {
-      "type": "string",
-      "enum": ["task"]
-    },
-    "body": {
-      "type": "string",
-      "description": "恢复执行时使用的完整任务说明"
-    },
-    "predicted_connector_permissions": {
-      "type": "array",
-      "description": "预计使用的 Connector 权限；本案例为空数组"
-    },
-    "execution": {
-      "type": "object",
-      "required": ["kind"],
-      "properties": {
-        "kind": {
-          "type": "string",
-          "enum": ["agent", "main_agent", "space_action"]
-        }
-      }
-    },
-    "schedule": {
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "enum": ["runonce", "interval", "daily",
-                   "weekly", "monthly", "yearly"]
-        },
-        "at": {
-          "type": "string",
-          "description": "一次性或间隔任务的起始时间"
-        },
-        "every": {
-          "type": "string",
-          "description": "间隔周期，例如 15m、1h"
-        },
-        "time": {
-          "type": "string",
-          "description": "周期任务的 HH:MM[:SS]"
-        },
-        "timezone": {
-          "type": "string",
-          "description": "IANA 时区"
-        },
-        "flexible_time": {
-          "type": "boolean",
-          "description": "是否允许 Runtime 调整到非整点分钟"
-        }
-      }
-    }
-  }
-}</code></pre>
-<h4>cron.update 输入 Schema 节选</h4>
-<pre><code>// 输入 Schema 节选：id 必填，要修改的字段按需传入
-{
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["id"],
-  "properties": {
-    "id": { "type": "string" },
-    "schedule": { "type": "object" },
-    "body": { "type": "string" },
-    "enabled": { "type": "boolean" }
-  }
-}</code></pre>
-<h4>cron.remove 输入 Schema</h4>
-<pre><code>{
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["id"],
-  "properties": { "id": { "type": "string" } }
-}</code></pre>
-
-    <h3>关闭 Goal：<code>tracking.set_status</code></h3>
-<h4>输入 Schema</h4>
-<pre><code>{
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["goal_id", "status", "reason"],
-  "properties": {
-    "goal_id": {
-      "type": "string",
-      "description": "需要更新的 tracked item ID"
-    },
-    "status": {
-      "type": "string",
-      "enum": ["active", "completed"]
-    },
-    "reason": {
-      "type": "string",
-      "minLength": 1,
-      "description": "生命周期变化原因"
-    }
-  }
-}</code></pre>
-
+  <section id="appendix-c">
+    <h3>C. 原始轨迹</h3>
+    <h4>主 Agent</h4>
+    <p><a href="reference/退款主Agent原始轨迹.jsonl" download>下载主 Agent 原始轨迹（JSONL）</a></p>
+    <h4>Browser Agent（11 份 Session）</h4>
+    <ul>
+      <li><a href="reference/browser-agent/2822a38d-5000-4235-b539-1893bee5403f.jsonl" download>Session 2822a38d…（JSONL）</a></li>
+      <li><a href="reference/browser-agent/37eb09e6-b3a2-4881-a35d-d4eab2103174.jsonl" download>Session 37eb09e6…（JSONL）</a></li>
+      <li><a href="reference/browser-agent/429500da-b39d-4340-9d78-2a7acd0129c2.jsonl" download>Session 429500da…（JSONL）</a></li>
+      <li><a href="reference/browser-agent/6da14612-8173-4b47-b69f-06094d58e208.jsonl" download>Session 6da14612…（JSONL）</a></li>
+      <li><a href="reference/browser-agent/7054be10-c42b-4c8c-933d-2648df21e77b.jsonl" download>Session 7054be10…（JSONL）</a></li>
+      <li><a href="reference/browser-agent/9cff8ff9-078f-474f-8780-6c068fa512ec.jsonl" download>Session 9cff8ff9…（JSONL）</a></li>
+      <li><a href="reference/browser-agent/b76f9a57-66b5-40ed-99b0-bc1470168602.jsonl" download>Session b76f9a57… · 退款确认暂停前（JSONL）</a></li>
+      <li><a href="reference/browser-agent/c8bf4260-8c02-42be-b2a9-d0a8faabd995.jsonl" download>Session c8bf4260…（JSONL）</a></li>
+      <li><a href="reference/browser-agent/cf5b7e35-4627-472f-91a5-1c7b0f550864.jsonl" download>Session cf5b7e35…（JSONL）</a></li>
+      <li><a href="reference/browser-agent/f5084f7f-a964-43e6-8707-ec279aee0c6a.jsonl" download>Session f5084f7f… · 退款确认续接后（JSONL）</a></li>
+      <li><a href="reference/browser-agent/f8803477-520f-494c-9214-c42028494890.jsonl" download>Session f8803477…（JSONL）</a></li>
+    </ul>
   </section>
   </section>
   <footer>
